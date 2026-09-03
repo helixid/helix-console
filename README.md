@@ -19,34 +19,83 @@ full design rationale and the (superseded) original spec.
 
 Console is a client of `helix-api` — it calls the same admin endpoints
 (`x-admin-api-key`) that the CLI and SDK use, and adds nothing to the
-trust model itself. See the main repo [README's 5-layer table](../README.md#what-helixid-does)
-for how DIDs, VCs, VPs, JWT sessions and the audit trail fit together;
-Console is a read/write surface over that stack, not a new layer.
+trust model itself. It's a standalone repo (not a subfolder of a larger
+monorepo): the only external dependency is a running `helix-api`, which
+lives in the sibling `helix-server` repo. Console doesn't import
+`@helixid/sdk-js` — its admin-API request/response types are defined
+locally in `src/api/types.ts`.
 
 ## 2. Prerequisites
 
-- **Node 24.15.0** (see the repo's `.nvmrc`; `nvm use` picks it up)
-- **pnpm** (`corepack enable` if you don't have it)
+- **Node 20.19+ or 22.12+** (Vite 7's own minimum — an older Node in that
+  range, e.g. 20.18.x, still runs `pnpm dev` but prints a version warning)
+  and **pnpm** (`corepack enable` if you don't have it)
 - A running `helix-api` instance and its admin API key — Console has no
-  backend of its own. See the main repo README's Quick Start for spinning
-  one up locally.
+  backend of its own. See `helix-server/helix-api/README.md`'s Quick
+  Start for the fastest way to get one running locally (SQLite,
+  `did:key`, no Docker, no Postgres).
 
 ## 3. Running Console
 
-### 3.1 As part of the sample app (pre-built image via docker-compose)
+### 3.1 Local development, no Docker (`pnpm dev`)
 
-Console does not yet have an entry in the root `docker-compose.yml`. Until
-that lands, run it standalone (§3.2) alongside the compose stack's
-`helix-api`, pointing `API_BASE_URL` at whatever host/port that stack
-exposes (e.g. `http://localhost:3000`).
+This is the fastest path for local testing and the one to use if you
+don't want Docker involved at all.
 
-### 3.2 Standalone self-hosting (docker build / docker run)
-
-Console ships as a static SPA served by nginx. Build from the **repository
-root** (it depends on the `@helixid/sdk-js` workspace package):
+**First, get `helix-api` running** (see its own Quick Start —
+`helix-server/helix-api/README.md`). The short version, in the
+`helix-server` repo:
 
 ```bash
-docker build -f console/Dockerfile -t helixid-console .
+pnpm install
+# helix-api/.env — see helix-api's README for the full variable list
+cd helix-api && npm run dev
+```
+
+Leave that running (default `http://localhost:3000`), then in this repo:
+
+```bash
+pnpm install
+cp .env.example .env
+```
+
+Leave `VITE_API_BASE_URL` **empty** in `.env` rather than filling in the
+`helix-api` URL. `helix-api` has no CORS handling, so a direct
+browser-to-API fetch from Vite's dev origin (`localhost:5173`) would be
+blocked; leaving it empty makes the SDK issue relative `/v1` requests
+that Vite's own dev-server proxy forwards to `helix-api` instead (see
+`vite.config.ts` — defaults to proxying to `http://localhost:3000`; edit
+that file if your API runs elsewhere). Only fill in `VITE_ADMIN_API_KEY`:
+
+```bash
+# .env
+VITE_API_BASE_URL=
+VITE_ADMIN_API_KEY=dev-admin-key-change-in-production   # match helix-api's HELIX_ADMIN_API_KEY
+```
+
+```bash
+pnpm dev
+```
+
+Vite serves on `http://localhost:5173` (or the next free port). Log in
+with `admin` / `admin` (§5.5).
+
+### 3.2 As part of one of the example demos (docker-compose)
+
+The example stacks in `helix-server/examples/*` each bring up their own
+`helix-api` + Console pairing via `docker-compose.yml` (see that repo).
+Console has no entry of its own in any shared root compose file — it's
+built fresh per example, pointing `API_BASE_URL` at whatever
+host-published port that stack exposes.
+
+### 3.3 Standalone self-hosting (docker build / docker run)
+
+Console ships as a static SPA served by nginx. Build from **this repo's
+root** (no cross-repo build context needed — see the `Dockerfile` header
+comment):
+
+```bash
+docker build -f Dockerfile -t helixid-console .
 ```
 
 Run it with the runtime config every environment needs (see §4 — nothing
@@ -61,33 +110,10 @@ docker run -p 8080:80 \
   helixid-console
 ```
 
-Open `http://localhost:8080`.
-
-### 3.3 Local development (npm run dev)
-
-From the repository root, install workspace dependencies once, then build
-the packages Console depends on:
-
-```bash
-pnpm install
-pnpm --filter @helixid/core build
-pnpm --filter @helixid/sdk-js build
-```
-
-Copy the env template and fill in a running `helix-api`'s URL and admin
-key:
-
-```bash
-cd console
-cp .env.example .env
-# edit .env: VITE_API_BASE_URL, VITE_ADMIN_API_KEY
-npm run dev
-```
-
-Vite serves on `http://localhost:5173` (or the next free port) and proxies
-`/v1` requests to `http://localhost:3400` in dev, since `helix-api` has no
-CORS handling — adjust the proxy target in `vite.config.ts` if your API
-runs on a different port.
+Open `http://localhost:8080`. Unlike §3.1, `API_BASE_URL` here must be a
+real, absolute URL — this build has no dev-server proxy, so the browser
+calls it directly (still subject to `helix-api` having no CORS handling,
+so this only works when the browser can reach that exact origin).
 
 ## 4. Configuration / Environment Variables
 
