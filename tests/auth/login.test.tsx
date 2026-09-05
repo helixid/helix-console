@@ -4,17 +4,21 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from '../../src/App';
-import { api } from '../../src/api/client';
+import { api } from '@helixid/console-core';
 
-vi.mock('../../src/api/client', () => ({
-  api: {
-    listAgents: vi.fn(),
-    getAgent: vi.fn(),
-    revokeAgent: vi.fn(),
-    createEnrollmentToken: vi.fn(),
-    getAuditLog: vi.fn(),
-  },
-}));
+vi.mock('@helixid/console-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@helixid/console-core')>();
+  return {
+    ...actual,
+    api: {
+      listAgents: vi.fn(),
+      getAgent: vi.fn(),
+      revokeAgent: vi.fn(),
+      createEnrollmentToken: vi.fn(),
+      getAuditLog: vi.fn(),
+    },
+  };
+});
 const mocked = vi.mocked(api);
 
 function renderApp(initialEntry = '/agents') {

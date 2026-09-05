@@ -3,9 +3,19 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Enterprise's own AuthProvider — reuses @helixid/console-core's AuthContext
+// object (so its useAuth()/RequireAuth/AppLayout/LoginPage all keep working
+// unmodified) but provides a richer value: authenticated if EITHER the
+// operator admin-key flag OR a hosted-account session is present. Tracks
+// two independent session kinds: the original operator admin-key flag, and
+// a hosted-account session (email/password or Google, provisioned with its
+// own DID — see docs/proposal-hosted-instance.md). The account session is
+// read here on mount so a page reload after registering/logging in doesn't
+// lose it.
 
-import { createContext, useCallback, useMemo, useState, type ReactNode } from 'react';
-import { getAuthConfig } from '../runtimeConfig';
+import { useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { AuthContext, getAuthConfig, type AuthValue } from '@helixid/console-core';
 import {
   clearAccountSession,
   getAccountSession,
@@ -15,43 +25,15 @@ import {
 
 const STORAGE_KEY = 'helixid.console.auth';
 
-export interface AuthValue {
-  /** True if signed in as either the operator (admin key) or a hosted account. */
-  isAuthenticated: boolean;
+export interface EnterpriseAuthValue extends AuthValue {
   /** Which kind of session is active, or null if neither. Lets the UI (nav footer, etc.) tell them apart. */
   sessionKind: 'operator' | 'account' | null;
   /** Populated only when sessionKind === 'account'. */
   accountSession: AccountSession | null;
-  /** Validates against runtime-config credentials; returns success. */
-  login: (username: string, password: string) => boolean;
   /** Called after a successful /account/register or /account/login — this is the one place that writes the session. */
   setAccountSession: (session: AccountSession) => void;
-  /** Clears whichever session is active (operator flag and/or hosted-account session). */
-  logout: () => void;
 }
 
-export const AuthContext = createContext<AuthValue>({
-  isAuthenticated: false,
-  sessionKind: null,
-  accountSession: null,
-  login: () => false,
-  setAccountSession: () => {},
-  logout: () => {},
-});
-
-/**
- * Client-side access gate (dev spec §8 override). This is a gate, not a
- * security boundary — the ADMIN_API_KEY still ships in runtime config.
- * The session flag lives in sessionStorage so it survives a reload within
- * the tab but not a new tab / restart.
- *
- * Tracks two independent session kinds: the original operator admin-key
- * flag, and a hosted-account session (email/password or Google, provisioned
- * with its own DID — see docs/proposal-hosted-instance.md). Either one is
- * enough to pass RequireAuth. The account session is read here on mount so
- * a page reload after registering/logging in doesn't lose it — previously
- * it was written to sessionStorage but never read back anywhere.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isOperator, setIsOperator] = useState<boolean>(() => {
     try {
@@ -94,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccountSessionState(null);
   }, []);
 
-  const value = useMemo<AuthValue>(
+  const value = useMemo<EnterpriseAuthValue>(
     () => ({
       isAuthenticated: isOperator || accountSession !== null,
       sessionKind: isOperator ? 'operator' : accountSession ? 'account' : null,
@@ -107,4 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+/**
+ * console-core's own useAuth() is typed to the base AuthValue shape (it has
+ * no idea this enterprise build's AuthProvider supplies the richer one
+ * above). This is the enterprise-only equivalent for code that needs
+ * sessionKind/accountSession/setAccountSession — safe because this
+ * AuthProvider is the only one ever mounted in this app.
+ */
+export function useAccountAuth(): EnterpriseAuthValue {
+  return useContext(AuthContext) as EnterpriseAuthValue;
 }

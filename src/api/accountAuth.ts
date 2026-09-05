@@ -9,7 +9,7 @@
 // which speaks the admin-key-authenticated agent/VC API; this is the
 // email/password + Google identity layer for hosted.helixid.io accounts.
 
-import { getApiConfig } from '../runtimeConfig';
+import { getApiConfig } from '@helixid/console-core';
 
 const { apiBaseUrl } = getApiConfig();
 

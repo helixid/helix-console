@@ -7,12 +7,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { accountAuth, type AccountSummary } from '../../api/accountAuth';
-import { useAuth } from '../../auth/useAuth';
+import { useAccountAuth } from '../../auth/AuthContext';
 import { AccountAuthHero } from './AccountAuthHero';
 
 export function AccountRegisterPage() {
   const navigate = useNavigate();
-  const { setAccountSession } = useAuth();
+  const { setAccountSession } = useAccountAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
