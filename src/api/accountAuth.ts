@@ -23,6 +23,9 @@ export interface AccountSummary {
   issuerDid: string | null;
   hasPassword: boolean;
   hasGoogle: boolean;
+  emailVerified?: boolean;
+  companyName: string | null;
+  fieldOfOperation: string | null;
 }
 
 export interface AuthTokens {
@@ -53,9 +56,19 @@ async function postJson<T>(path: string, body: Record<string, unknown>): Promise
 }
 
 export const accountAuth = {
-  register: (email: string, password: string) =>
-    postJson<{ account: AccountSummary } & AuthTokens>('/v1/auth/register', { email, password }),
+  register: (
+    email: string,
+    password: string,
+    details?: { companyName?: string | undefined; fieldOfOperation?: string | undefined },
+  ) =>
+    postJson<{ account: AccountSummary } & AuthTokens>('/v1/auth/register', {
+      email,
+      password,
+      companyName: details?.companyName,
+      fieldOfOperation: details?.fieldOfOperation,
+    }),
   login: (email: string, password: string) =>
     postJson<{ account: AccountSummary } & AuthTokens>('/v1/auth/login', { email, password }),
+  refresh: (refreshToken: string) => postJson<AuthTokens>('/v1/auth/refresh', { refreshToken }),
   googleSignInUrl: (): string => buildUrl('/v1/auth/google'),
 };

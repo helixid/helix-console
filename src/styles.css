@@ -1249,6 +1249,23 @@ textarea:focus {
   padding: 10px 15px;
 }
 
+.login-switch {
+  margin-top: 18px;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.login-switch a {
+  color: var(--accent-strong);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.login-switch a:hover {
+  text-decoration: underline;
+}
+
 /* ---------------------------------------------------------------- */
 /* Hosted account auth (register / sign in) — split hero + form.     */
 /* Reuses the app's existing dark sidebar panel language for the     */
@@ -1459,6 +1476,12 @@ textarea:focus {
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-muted);
+}
+
+.account-auth__optional {
+  font-weight: 400;
+  color: var(--ink-muted);
+  opacity: 0.75;
 }
 
 .account-auth__form input {

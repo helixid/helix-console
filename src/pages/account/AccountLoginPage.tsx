@@ -7,10 +7,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { accountAuth } from '../../api/accountAuth';
+import { useAuth } from '../../auth/useAuth';
 import { AccountAuthHero } from './AccountAuthHero';
 
 export function AccountLoginPage() {
   const navigate = useNavigate();
+  const { setAccountSession } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function AccountLoginPage() {
     setSubmitting(true);
     try {
       const result = await accountAuth.login(email, password);
-      sessionStorage.setItem('helixid.account.session', JSON.stringify(result));
+      setAccountSession(result);
       navigate('/agents');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-in failed.');

@@ -5,6 +5,8 @@
 //    http://www.apache.org/licenses/LICENSE-2.0
 
 import { getApiConfig } from '../runtimeConfig';
+import { accountAuth } from './accountAuth';
+import { clearAccountSession, getAccountSession, setAccountSession } from '../auth/accountSession';
 import type {
   AuditFilters,
   AuditLogEntry,
@@ -27,6 +29,39 @@ function buildUrl(path: string, query?: Record<string, string | number | undefin
   return url.toString();
 }
 
+/**
+ * Which auth header to send is a per-request decision, not a fixed one
+ * picked at module load: a hosted-account session (email/password or
+ * Google — see AuthContext.tsx) takes priority when present, so that
+ * account's Console view is scoped to just their own agents/audit trail
+ * (server-side, via the same bearer token /v1/enrollment-tokens and
+ * /v1/vcs already accept). Falls back to the operator admin key
+ * (self-hosted / no account session) exactly as before.
+ */
+function applyAuthHeader(headers: Headers): void {
+  const session = getAccountSession();
+  if (session) {
+    headers.set('authorization', `Bearer ${session.accessToken}`);
+    return;
+  }
+  if (adminApiKey) headers.set('x-admin-api-key', adminApiKey);
+}
+
+/** One-shot refresh-on-401: access tokens are short-lived (~15 min, see docs/proposal-hosted-instance.md). */
+async function tryRefreshAccountSession(): Promise<boolean> {
+  const session = getAccountSession();
+  if (!session) return false;
+  try {
+    const tokens = await accountAuth.refresh(session.refreshToken);
+    setAccountSession({ account: session.account, ...tokens });
+    return true;
+  } catch {
+    clearAccountSession();
+    if (typeof window !== 'undefined') window.location.assign('/account/login');
+    return false;
+  }
+}
+
 async function requestJson<T>(
   path: string,
   options: {
@@ -36,19 +71,24 @@ async function requestJson<T>(
     expectJsonArray?: boolean;
   } = {},
 ): Promise<T> {
-  const headers = new Headers();
-  if (options.body !== undefined) headers.set('content-type', 'application/json');
-  if (adminApiKey) headers.set('x-admin-api-key', adminApiKey);
+  const url = buildUrl(path, options.query);
+  const method = options.method ?? 'GET';
 
-  const requestInit: RequestInit = {
-    method: options.method ?? 'GET',
-    headers,
+  const send = () => {
+    const headers = new Headers();
+    if (options.body !== undefined) headers.set('content-type', 'application/json');
+    applyAuthHeader(headers);
+    const requestInit: RequestInit = { method, headers };
+    if (options.body !== undefined) requestInit.body = JSON.stringify(options.body);
+    return fetch(url, requestInit);
   };
-  if (options.body !== undefined) {
-    requestInit.body = JSON.stringify(options.body);
-  }
 
-  const response = await fetch(buildUrl(path, options.query), requestInit);
+  let response = await send();
+
+  if (response.status === 401 && getAccountSession()) {
+    const refreshed = await tryRefreshAccountSession();
+    if (refreshed) response = await send();
+  }
 
   if (!response.ok) {
     let message = `Request failed with status ${response.status}`;

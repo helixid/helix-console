@@ -7,13 +7,17 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { accountAuth, type AccountSummary } from '../../api/accountAuth';
+import { useAuth } from '../../auth/useAuth';
 import { AccountAuthHero } from './AccountAuthHero';
 
 export function AccountRegisterPage() {
   const navigate = useNavigate();
+  const { setAccountSession } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [fieldOfOperation, setFieldOfOperation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [account, setAccount] = useState<AccountSummary | null>(null);
@@ -33,8 +37,11 @@ export function AccountRegisterPage() {
 
     setSubmitting(true);
     try {
-      const result = await accountAuth.register(email, password);
-      sessionStorage.setItem('helixid.account.session', JSON.stringify(result));
+      const result = await accountAuth.register(email, password, {
+        companyName: companyName.trim() || undefined,
+        fieldOfOperation: fieldOfOperation.trim() || undefined,
+      });
+      setAccountSession(result);
       setAccount(result.account);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not create your account.');
@@ -123,6 +130,23 @@ export function AccountRegisterPage() {
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
                 autoComplete="new-password"
+              />
+            </label>
+            <label>
+              Company name <span className="account-auth__optional">(optional)</span>
+              <input
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+                autoComplete="organization"
+                placeholder="Acme Corp"
+              />
+            </label>
+            <label>
+              Field of operation <span className="account-auth__optional">(optional)</span>
+              <input
+                value={fieldOfOperation}
+                onChange={(event) => setFieldOfOperation(event.target.value)}
+                placeholder="e.g. Logistics, Healthcare, Fintech"
               />
             </label>
             {error && <p className="account-auth__error" role="alert">{error}</p>}

@@ -5,7 +5,7 @@
 //    http://www.apache.org/licenses/LICENSE-2.0
 
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import helixMark from '../assets/helix-mark.png';
 
@@ -72,6 +72,9 @@ export function LoginPage() {
             Sign in
           </button>
         </form>
+        <p className="login-switch">
+          Not an operator? <Link to="/account/login">Sign in with your HelixID account</Link>
+        </p>
       </div>
     </div>
   );

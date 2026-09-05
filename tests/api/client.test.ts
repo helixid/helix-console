@@ -26,6 +26,65 @@ describe('api/client', () => {
     delete window.__HELIXID_CONFIG__;
     vi.unstubAllEnvs();
     vi.stubGlobal('fetch', fetchMock);
+    sessionStorage.clear();
+  });
+
+  describe('hosted-account session auth', () => {
+    const session = {
+      account: { id: 'acct:1', email: 'a@acme.example', issuerDid: null, companyName: null, fieldOfOperation: null },
+      accessToken: 'at_1',
+      refreshToken: 'rt_1',
+      expiresIn: 900,
+    };
+
+    it('sends the account bearer token instead of the admin key when a session is present', async () => {
+      window.__HELIXID_CONFIG__ = { ADMIN_API_KEY: 'admin-key' };
+      sessionStorage.setItem('helixid.account.session', JSON.stringify(session));
+      fetchMock.mockResolvedValueOnce(jsonResponse([]));
+      const { api } = await importApi();
+
+      await api.listAgents();
+
+      const init = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(headersOf(init).get('authorization')).toBe('Bearer at_1');
+      expect(headersOf(init).get('x-admin-api-key')).toBeNull();
+    });
+
+    it('refreshes once on a 401 and retries the original request', async () => {
+      sessionStorage.setItem('helixid.account.session', JSON.stringify(session));
+      const { api } = await importApi();
+
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ error: { message: 'expired' } }, 401))
+        .mockResolvedValueOnce(jsonResponse({ accessToken: 'at_2', refreshToken: 'rt_2', expiresIn: 900 }))
+        .mockResolvedValueOnce(jsonResponse([{ vcId: 'vc:1' }]));
+
+      await expect(api.listAgents()).resolves.toEqual([{ vcId: 'vc:1' }]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      const refreshCall = fetchMock.mock.calls[1]?.[0] as string;
+      expect(refreshCall).toContain('/v1/auth/refresh');
+      const retryInit = fetchMock.mock.calls[2]?.[1] as RequestInit | undefined;
+      expect(headersOf(retryInit).get('authorization')).toBe('Bearer at_2');
+      expect(JSON.parse(sessionStorage.getItem('helixid.account.session') ?? '{}').accessToken).toBe(
+        'at_2',
+      );
+    });
+
+    it('clears the session and gives up if the refresh token is also rejected', async () => {
+      sessionStorage.setItem('helixid.account.session', JSON.stringify(session));
+      const { api } = await importApi();
+      const assignSpy = vi.fn();
+      vi.stubGlobal('location', { ...window.location, assign: assignSpy });
+
+      fetchMock
+        .mockResolvedValueOnce(jsonResponse({ error: { message: 'expired' } }, 401))
+        .mockResolvedValueOnce(jsonResponse({ error: { message: 'invalid refresh token' } }, 401));
+
+      await expect(api.listAgents()).rejects.toThrow();
+      expect(sessionStorage.getItem('helixid.account.session')).toBeNull();
+      expect(assignSpy).toHaveBeenCalledWith('/account/login');
+    });
   });
 
   describe('configuration', () => {

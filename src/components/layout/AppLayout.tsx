@@ -12,7 +12,7 @@ import helixMark from '../../assets/helix-mark.png';
 import helixWordmark from '../../assets/helix-wordmark.png';
 
 export function AppLayout() {
-  const { logout } = useAuth();
+  const { logout, sessionKind, accountSession } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -41,7 +41,11 @@ export function AppLayout() {
             Audit
           </NavLink>
         </nav>
-        <div className="sidebar-foot">operator console</div>
+        <div className="sidebar-foot">
+          {sessionKind === 'account' && accountSession
+            ? `signed in as ${accountSession.account.email}`
+            : 'operator console'}
+        </div>
       </aside>
       <div className="app-content">
         <header className="app-topbar">
