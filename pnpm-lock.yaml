@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@helixid/console-core':
-        specifier: file:../helix-console-core
-        version: file:../helix-console-core
+        specifier: github:helixid/helix-console-core
+        version: https://codeload.github.com/helixid/helix-console-core/tar.gz/2dbf8ad31b3bb2f504e6934eb41826f0d6cc35ee
       react:
         specifier: ^19.2.0
         version: 19.2.8
@@ -338,8 +338,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@helixid/console-core@file:../helix-console-core':
-    resolution: {directory: ../helix-console-core, type: directory}
+  '@helixid/console-core@https://codeload.github.com/helixid/helix-console-core/tar.gz/2dbf8ad31b3bb2f504e6934eb41826f0d6cc35ee':
+    resolution: {tarball: https://codeload.github.com/helixid/helix-console-core/tar.gz/2dbf8ad31b3bb2f504e6934eb41826f0d6cc35ee}
+    version: 0.1.0
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -1355,7 +1356,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@helixid/console-core@file:../helix-console-core':
+  '@helixid/console-core@https://codeload.github.com/helixid/helix-console-core/tar.gz/2dbf8ad31b3bb2f504e6934eb41826f0d6cc35ee':
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
