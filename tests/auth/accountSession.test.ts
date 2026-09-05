@@ -17,7 +17,15 @@ describe('auth/accountSession', () => {
 
   it('round-trips a session through sessionStorage', () => {
     const session = {
-      account: { id: 'acct:1', email: 'a@acme.example', issuerDid: null, companyName: 'Acme', fieldOfOperation: null },
+      account: {
+        id: 'acct:1',
+        email: 'a@acme.example',
+        issuerDid: null,
+        hasPassword: true,
+        hasGoogle: false,
+        companyName: 'Acme',
+        fieldOfOperation: null,
+      },
       accessToken: 'at_1',
       refreshToken: 'rt_1',
       expiresIn: 900,
@@ -28,7 +36,15 @@ describe('auth/accountSession', () => {
 
   it('clears the stored session', () => {
     setAccountSession({
-      account: { id: 'acct:1', email: 'a@acme.example', issuerDid: null, companyName: null, fieldOfOperation: null },
+      account: {
+        id: 'acct:1',
+        email: 'a@acme.example',
+        issuerDid: null,
+        hasPassword: true,
+        hasGoogle: false,
+        companyName: null,
+        fieldOfOperation: null,
+      },
       accessToken: 'at_1',
       refreshToken: 'rt_1',
       expiresIn: 900,
