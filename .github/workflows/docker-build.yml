@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: helixid/helix-console-core
+  IMAGE_NAME: helixid/helix-console
 
 jobs:
   docker-build:

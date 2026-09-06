@@ -19,11 +19,11 @@ full design rationale and the (superseded) original spec.
 
 Console is a client of `helix-api` — it calls the same admin endpoints
 (`x-admin-api-key`) that the CLI and SDK use, and adds nothing to the
-trust model itself. It's a standalone repo (not a subfolder of a larger
-monorepo): the only external dependency is a running `helix-api`, which
-lives in the sibling `helix-server` repo. Console doesn't import
-`@helixid/sdk-js` — its admin-API request/response types are defined
-locally in `src/api/types.ts`.
+trust model itself. It's a standalone repo: the only external dependency
+is a running `helix-api` instance, which self-hosters run from the
+[`helixid`](https://github.com/helixid/helixid) repo (the OSS server).
+Console doesn't import `@helixid/sdk-js` — its admin-API request/response
+types are defined locally in `src/api/types.ts`.
 
 ## 2. Prerequisites
 
@@ -31,9 +31,9 @@ locally in `src/api/types.ts`.
   range, e.g. 20.18.x, still runs `pnpm dev` but prints a version warning)
   and **pnpm** (`corepack enable` if you don't have it)
 - A running `helix-api` instance and its admin API key — Console has no
-  backend of its own. See `helix-server/helix-api/README.md`'s Quick
-  Start for the fastest way to get one running locally (SQLite,
-  `did:key`, no Docker, no Postgres).
+  backend of its own. See the [`helixid`](https://github.com/helixid/helixid)
+  repo's README Quick Start for the fastest way to get one running locally
+  (SQLite, `did:key`, no Docker, no Postgres).
 
 ## 3. Running Console
 
@@ -42,14 +42,14 @@ locally in `src/api/types.ts`.
 This is the fastest path for local testing and the one to use if you
 don't want Docker involved at all.
 
-**First, get `helix-api` running** (see its own Quick Start —
-`helix-server/helix-api/README.md`). The short version, in the
-`helix-server` repo:
+**First, get `helix-api` running** (see its own Quick Start in the
+[`helixid`](https://github.com/helixid/helixid) repo's README). The short
+version, in that repo:
 
 ```bash
 pnpm install
-# helix-api/.env — see helix-api's README for the full variable list
-cd helix-api && npm run dev
+# .env — see helixid's README for the full variable list
+npm run dev
 ```
 
 Leave that running (default `http://localhost:3000`), then in this repo:
@@ -82,7 +82,7 @@ with `admin` / `admin` (§5.5).
 
 ### 3.2 As part of one of the example demos (docker-compose)
 
-The example stacks in `helix-server/examples/*` each bring up their own
+The example stacks in `helixid/examples/*` each bring up their own
 `helix-api` + Console pairing via `docker-compose.yml` (see that repo).
 Console has no entry of its own in any shared root compose file — it's
 built fresh per example, pointing `API_BASE_URL` at whatever
@@ -205,9 +205,8 @@ branch.
 ### 6.2 Compatibility with helix-api versions
 
 Console calls `GET /v1/vcs`, `GET /v1/audit-log`, and the existing
-services/enrollment endpoints on `helix-api`. Pin Console and `helix-api`
-to versions built from the same monorepo commit until these are
-independently versioned and a compatibility table exists.
+enrollment endpoints on `helix-api`. Pin Console and `helix-api` to
+compatible release versions until a formal compatibility table exists.
 
 ## 7. Contributing / Development
 
