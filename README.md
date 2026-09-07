@@ -4,6 +4,21 @@ Operator UI for the HelixID trust stack — browse agents, enroll new ones,
 manage verifier services, and read the audit trail, without hitting the
 API by hand.
 
+## Documentation
+
+Full documentation is at **[docs.helixid.dev](https://docs.helixid.dev)** — concepts,
+guides, and reference. This README covers only what is specific to this repository.
+
+| | |
+|---|---|
+| **Start here** | [Introduction](https://docs.helixid.dev/) |
+| **Concepts** | [The Trust Stack](https://docs.helixid.dev/concepts/trust-stack) · [Two-Issuer Model](https://docs.helixid.dev/concepts/two-issuer-model) · [Delegation](https://docs.helixid.dev/concepts/delegation) · [Revocation](https://docs.helixid.dev/concepts/revocation) |
+| **Get started** | [Quick Start](https://docs.helixid.dev/get-started/quick-start) · [Installation & Modes](https://docs.helixid.dev/get-started/installation-and-modes) |
+| **Contributing** | [How to Contribute](https://docs.helixid.dev/contributing/how-to-contribute) · [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| **Security** | [Reporting a Vulnerability](https://docs.helixid.dev/security/reporting-a-vulnerability) · [`SECURITY.md`](SECURITY.md) |
+
+---
+
 ## 1. Overview
 
 ### 1.1 What Console is
@@ -225,9 +240,12 @@ theme, persisted in `localStorage`.
 
 ### 6.1 Image tags
 
-`ghcr.io/nicedigverse/helixid-console` is the intended tag namespace once
-Console images are published; no image has been published yet as of this
-branch.
+Console is published to Docker Hub as
+[`helixid/console`](https://hub.docker.com/r/helixid/console), multi-arch for
+`linux/amd64` and `linux/arm64`.
+
+Every push to `main` publishes `:latest` and a `:<git-sha>` tag. Pin the sha for
+a reproducible deploy; see §3.3 for running it.
 
 ### 6.2 Compatibility with helix-api versions
 
@@ -295,3 +313,18 @@ The login screen (§5.5) prevents casual access to the UI; it does not
 protect the `ADMIN_API_KEY`, which is still delivered to every browser
 session via runtime config. Treat Console's trust boundary as identical
 to any other client holding that key.
+
+---
+
+## The HelixID ecosystem
+
+| Repository | What it is |
+|---|---|
+| [helixid](https://github.com/helixid/helixid) | HelixID API — the issuer and verifier service |
+| [helix-core](https://github.com/helixid/helix-core) | `@helixid/core` — crypto, schemas, resolver, verification primitives |
+| [helix-sdk-js](https://github.com/helixid/helix-sdk-js) | JS/TS SDK, CLI, LangChain + MCP middleware, consent widget |
+| [helix-sdk-py](https://github.com/helixid/helix-sdk-py) | `helixid-sdk-py` — the Python SDK |
+| **helix-console** — you are here | Operator Console SPA |
+| [helix-wiki](https://github.com/helixid/helix-wiki) | Source for [docs.helixid.dev](https://docs.helixid.dev) |
+
+---
