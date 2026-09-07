@@ -84,19 +84,38 @@ with `admin` / `admin` (§5.5).
 
 The example stacks in `helixid/examples/*` each bring up their own
 `helix-api` + Console pairing via `docker-compose.yml` (see that repo).
-Console has no entry of its own in any shared root compose file — it's
-built fresh per example, pointing `API_BASE_URL` at whatever
-host-published port that stack exposes.
+They **do not build Console from source** — running a demo needs only the
+`helixid` checkout, never this one. Each example's
+`docker/console.Dockerfile` is two lines:
 
-### 3.3 Standalone self-hosting (docker build / docker run)
+```dockerfile
+FROM helixid/console:latest
+COPY console-nginx.conf /etc/nginx/conf.d/default.conf
+```
 
-Console ships as a static SPA served by nginx. Build from **this repo's
-root** (no cross-repo build context needed — see the `Dockerfile` header
-comment):
+The nginx server block it layers on reverse-proxies `/v1` and `/health` to
+that stack's `helix-api`, because the demo API ships without CORS and the
+Console calls it from the browser. So in the demos `API_BASE_URL` is set to
+the **Console's own origin** (e.g. `http://localhost:8080`), not the API's
+port — every call lands same-origin and nginx forwards it.
+
+The config is baked into an image rather than bind-mounted on purpose:
+mounting a host file depends on Docker Desktop file-sharing settings that
+aren't guaranteed on someone else's machine.
+
+### 3.3 Standalone self-hosting (docker pull / docker run)
+
+Console ships as a static SPA served by nginx, published to Docker Hub as
+[`helixid/console`](https://hub.docker.com/r/helixid/console) for both
+`linux/amd64` and `linux/arm64`. You do **not** need to clone this repo to
+run it:
 
 ```bash
-docker build -f Dockerfile -t helixid-console .
+docker pull helixid/console:latest
 ```
+
+Every push to `main` publishes `:latest` and a `:<git-sha>` tag — pin the
+sha when you want a reproducible deploy.
 
 Run it with the runtime config every environment needs (see §4 — nothing
 is baked in at build time, so the same image works anywhere):
@@ -107,7 +126,15 @@ docker run -p 8080:80 \
   -e ADMIN_API_KEY=your-admin-key \
   -e CONSOLE_USERNAME=admin \
   -e CONSOLE_PASSWORD=admin \
-  helixid-console
+  helixid/console:latest
+```
+
+To build it yourself instead — for local changes, or to bake in a custom
+nginx config — build from **this repo's root** (no cross-repo build context
+needed, see the `Dockerfile` header comment):
+
+```bash
+docker build -f Dockerfile -t helixid-console .
 ```
 
 Open `http://localhost:8080`. Unlike §3.1, `API_BASE_URL` here must be a
