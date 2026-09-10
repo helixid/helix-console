@@ -6,8 +6,10 @@ API by hand.
 
 ## Documentation
 
-Full documentation is at **[docs.helixid.dev](https://docs.helixid.dev)** — concepts,
-guides, and reference. This README covers only what is specific to this repository.
+Full documentation is at **[docs.helixid.dev](https://docs.helixid.dev)**. For
+concepts, get-started guides, and how this repo fits into the wider stack, see
+the [helixid](https://github.com/helixid/helixid) repo's README. This README
+covers only what is specific to Console.
 
 | | |
 |---|---|
