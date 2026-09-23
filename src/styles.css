@@ -759,11 +759,6 @@ tbody tr:last-child td {
   gap: 15px;
 }
 
-.enroll-form-actions {
-  display: flex;
-  gap: 10px;
-}
-
 .enroll-form label,
 .service-form label {
   display: grid;

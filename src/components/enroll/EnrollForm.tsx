@@ -8,12 +8,8 @@ import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'rea
 import type { EnrollmentTokenInput } from '../../api/types';
 
 export interface EnrollFormProps {
-  /** Mint a token for a separate agent process to redeem later (async). */
   onSubmit: (input: EnrollmentTokenInput) => void;
   submitting: boolean;
-  /** Mint and redeem in this same interaction (single click, still 2 API calls). Omit to hide the button. */
-  onOnboardNow?: (input: EnrollmentTokenInput) => void;
-  onboarding?: boolean;
 }
 
 const SCOPE_OPTIONS = [
@@ -57,7 +53,7 @@ function parseScopeInput(value: string): { committed: string[]; remainder: strin
   };
 }
 
-export function EnrollForm({ onSubmit, submitting, onOnboardNow, onboarding }: EnrollFormProps) {
+export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
   const [agentName, setAgentName] = useState('');
   const [scopes, setScopes] = useState<string[]>([]);
   const [scopeQuery, setScopeQuery] = useState('');
@@ -69,7 +65,7 @@ export function EnrollForm({ onSubmit, submitting, onOnboardNow, onboarding }: E
   const scopeErrorId = useId();
   const scopeInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     const requestedDomains = splitList(domains);
     const depth = maxDelegationDepth.trim() === '' ? undefined : Number(maxDelegationDepth);
@@ -80,24 +76,12 @@ export function EnrollForm({ onSubmit, submitting, onOnboardNow, onboarding }: E
       scopeInputRef.current?.focus();
       return;
     }
-    const input: EnrollmentTokenInput = {
+    onSubmit({
       agentName: agentName.trim(),
       requestedScopes,
       ...(requestedDomains.length > 0 ? { requestedDomains } : {}),
       ...(depth !== undefined && !Number.isNaN(depth) ? { maxDelegationDepth: depth } : {}),
-    };
-    // Two submit buttons share this handler; the submitter (the button
-    // actually clicked) is how we tell which action fired — plain
-    // `new FormData(form)` does NOT include a button's value unless the
-    // submitter is passed explicitly, so read it off the native event instead.
-    const submitter = (event.nativeEvent as SubmitEvent).submitter as
-      | HTMLButtonElement
-      | undefined;
-    if (submitter?.value === 'onboard-now' && onOnboardNow) {
-      onOnboardNow(input);
-    } else {
-      onSubmit(input);
-    }
+    });
   };
 
   const commitScope = (value: string) => {
@@ -220,26 +204,9 @@ export function EnrollForm({ onSubmit, submitting, onOnboardNow, onboarding }: E
           onChange={(event) => setMaxDelegationDepth(event.target.value)}
         />
       </label>
-      <div className="enroll-form-actions">
-        {onOnboardNow && (
-          <button
-            type="submit"
-            name="action"
-            value="onboard-now"
-            disabled={submitting || Boolean(onboarding)}
-          >
-            {onboarding ? 'Onboarding…' : 'Onboard now'}
-          </button>
-        )}
-        <button
-          type="submit"
-          name="action"
-          value="mint"
-          disabled={submitting || Boolean(onboarding)}
-        >
-          {submitting ? 'Minting…' : 'Mint enrollment token'}
-        </button>
-      </div>
+      <button type="submit" disabled={submitting}>
+        {submitting ? 'Onboarding…' : 'Onboard now'}
+      </button>
     </form>
   );
 }

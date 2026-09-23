@@ -8,15 +8,11 @@ import { api } from '../../src/api/client';
 
 vi.mock('../../src/api/client', () => ({
   api: {
-    createEnrollmentToken: vi.fn(),
     onboardAgentNow: vi.fn(),
-    getAuditLog: vi.fn(),
   },
 }));
 
-const createEnrollmentToken = vi.mocked(api.createEnrollmentToken);
 const onboardAgentNow = vi.mocked(api.onboardAgentNow);
-const getAuditLog = vi.mocked(api.getAuditLog);
 
 function renderPage() {
   return render(
@@ -29,58 +25,9 @@ function renderPage() {
 describe('EnrollPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getAuditLog.mockResolvedValue([]);
   });
 
-  it('mints a token and displays it immediately with the polling status', async () => {
-    createEnrollmentToken.mockResolvedValue({
-      token: 'enroll:abc123',
-      expiresAt: '2026-06-01T00:15:00.000Z',
-    });
-    renderPage();
-
-    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
-    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'read:orders');
-    await userEvent.click(screen.getByRole('button', { name: /mint enrollment token/i }));
-
-    expect(createEnrollmentToken).toHaveBeenCalledWith({
-      agentName: 'billing-agent',
-      requestedScopes: ['read:orders'],
-    });
-    expect(await screen.findByText('enroll:abc123')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveTextContent(/waiting for the agent/i);
-  });
-
-  it('returns to the form when minting another token', async () => {
-    createEnrollmentToken.mockResolvedValue({
-      token: 'enroll:abc123',
-      expiresAt: '2026-06-01T00:15:00.000Z',
-    });
-    renderPage();
-
-    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
-    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'read:orders');
-    await userEvent.click(screen.getByRole('button', { name: /mint enrollment token/i }));
-    await screen.findByText('enroll:abc123');
-
-    await userEvent.click(screen.getByRole('button', { name: /mint another token/i }));
-    expect(screen.getByLabelText(/agent name/i)).toBeInTheDocument();
-    expect(screen.queryByText('enroll:abc123')).not.toBeInTheDocument();
-  });
-
-  it('shows an error when minting fails and keeps the form', async () => {
-    createEnrollmentToken.mockRejectedValue(new Error('invalid scope'));
-    renderPage();
-
-    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
-    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'bogus');
-    await userEvent.click(screen.getByRole('button', { name: /mint enrollment token/i }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('invalid scope');
-    expect(screen.getByLabelText(/agent name/i)).toBeInTheDocument();
-  });
-
-  it('onboards now in one click and shows the agent DID immediately, with no polling', async () => {
+  it('onboards an agent in one click and shows the agent DID immediately', async () => {
     onboardAgentNow.mockResolvedValue({ agentDid: 'did:key:zAgent123', vcId: 'vc:helix:agent:1' });
     renderPage();
 
@@ -93,8 +40,6 @@ describe('EnrollPage', () => {
       requestedScopes: ['read:orders'],
     });
     expect(await screen.findByText('did:key:zAgent123')).toBeInTheDocument();
-    expect(createEnrollmentToken).not.toHaveBeenCalled();
-    expect(getAuditLog).not.toHaveBeenCalled();
   });
 
   it('returns to the form when onboarding another agent', async () => {
@@ -111,7 +56,7 @@ describe('EnrollPage', () => {
     expect(screen.queryByText('did:key:zAgent123')).not.toBeInTheDocument();
   });
 
-  it('shows an error when onboarding now fails and keeps the form', async () => {
+  it('shows an error when onboarding fails and keeps the form', async () => {
     onboardAgentNow.mockRejectedValue(new Error('invalid scope'));
     renderPage();
 
