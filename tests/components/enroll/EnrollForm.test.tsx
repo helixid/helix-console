@@ -42,4 +42,35 @@ describe('EnrollForm', () => {
     render(<EnrollForm onSubmit={vi.fn()} submitting />);
     expect(screen.getByRole('button', { name: /minting/i })).toBeDisabled();
   });
+
+  it('has no "Onboard now" button when onOnboardNow is not passed', () => {
+    render(<EnrollForm onSubmit={vi.fn()} submitting={false} />);
+    expect(screen.queryByRole('button', { name: /onboard now/i })).not.toBeInTheDocument();
+  });
+
+  it('calls onOnboardNow instead of onSubmit when "Onboard now" is clicked', async () => {
+    const onSubmit = vi.fn();
+    const onOnboardNow = vi.fn();
+    render(
+      <EnrollForm onSubmit={onSubmit} submitting={false} onOnboardNow={onOnboardNow} />,
+    );
+
+    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
+    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'custom:billing');
+    await userEvent.click(screen.getByRole('button', { name: /onboard now/i }));
+
+    expect(onOnboardNow).toHaveBeenCalledWith({
+      agentName: 'billing-agent',
+      requestedScopes: ['custom:billing'],
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('disables both buttons while onboarding', () => {
+    render(
+      <EnrollForm onSubmit={vi.fn()} submitting={false} onOnboardNow={vi.fn()} onboarding />,
+    );
+    expect(screen.getByRole('button', { name: /onboarding/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /mint enrollment token/i })).toBeDisabled();
+  });
 });

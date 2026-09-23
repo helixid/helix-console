@@ -18,9 +18,9 @@ export interface EnrollmentStatusProps {
 }
 
 /**
- * Watches the audit log for the onboarding_complete event that consumes
- * the freshly minted token (dev spec §5.2). This is the one deliberate
- * exception to the no-auto-polling rule (§8).
+ * Watches the audit log for the AGENT_ONBOARDED event that fires when the
+ * freshly minted token's agent finishes onboarding (dev spec §5.2). This is
+ * the one deliberate exception to the no-auto-polling rule (§8).
  */
 export function EnrollmentStatus({ tokenCreatedAt }: EnrollmentStatusProps) {
   const [enrolled, setEnrolled] = useState(false);
@@ -32,7 +32,7 @@ export function EnrollmentStatus({ tokenCreatedAt }: EnrollmentStatusProps) {
       if (doneRef.current) return;
       try {
         const events = await api.getAuditLog({
-          eventType: 'onboarding_complete',
+          eventType: 'AGENT_ONBOARDED',
           since: tokenCreatedAt,
         });
         if (events.length > 0 && !doneRef.current) {

@@ -9,11 +9,13 @@ import { api } from '../../src/api/client';
 vi.mock('../../src/api/client', () => ({
   api: {
     createEnrollmentToken: vi.fn(),
+    onboardAgentNow: vi.fn(),
     getAuditLog: vi.fn(),
   },
 }));
 
 const createEnrollmentToken = vi.mocked(api.createEnrollmentToken);
+const onboardAgentNow = vi.mocked(api.onboardAgentNow);
 const getAuditLog = vi.mocked(api.getAuditLog);
 
 function renderPage() {
@@ -73,6 +75,49 @@ describe('EnrollPage', () => {
     await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
     await userEvent.type(screen.getByLabelText(/requested scopes/i), 'bogus');
     await userEvent.click(screen.getByRole('button', { name: /mint enrollment token/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('invalid scope');
+    expect(screen.getByLabelText(/agent name/i)).toBeInTheDocument();
+  });
+
+  it('onboards now in one click and shows the agent DID immediately, with no polling', async () => {
+    onboardAgentNow.mockResolvedValue({ agentDid: 'did:key:zAgent123', vcId: 'vc:helix:agent:1' });
+    renderPage();
+
+    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
+    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'read:orders');
+    await userEvent.click(screen.getByRole('button', { name: /onboard now/i }));
+
+    expect(onboardAgentNow).toHaveBeenCalledWith({
+      agentName: 'billing-agent',
+      requestedScopes: ['read:orders'],
+    });
+    expect(await screen.findByText('did:key:zAgent123')).toBeInTheDocument();
+    expect(createEnrollmentToken).not.toHaveBeenCalled();
+    expect(getAuditLog).not.toHaveBeenCalled();
+  });
+
+  it('returns to the form when onboarding another agent', async () => {
+    onboardAgentNow.mockResolvedValue({ agentDid: 'did:key:zAgent123', vcId: 'vc:helix:agent:1' });
+    renderPage();
+
+    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
+    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'read:orders');
+    await userEvent.click(screen.getByRole('button', { name: /onboard now/i }));
+    await screen.findByText('did:key:zAgent123');
+
+    await userEvent.click(screen.getByRole('button', { name: /onboard another agent/i }));
+    expect(screen.getByLabelText(/agent name/i)).toBeInTheDocument();
+    expect(screen.queryByText('did:key:zAgent123')).not.toBeInTheDocument();
+  });
+
+  it('shows an error when onboarding now fails and keeps the form', async () => {
+    onboardAgentNow.mockRejectedValue(new Error('invalid scope'));
+    renderPage();
+
+    await userEvent.type(screen.getByLabelText(/agent name/i), 'billing-agent');
+    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'bogus');
+    await userEvent.click(screen.getByRole('button', { name: /onboard now/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('invalid scope');
     expect(screen.getByLabelText(/agent name/i)).toBeInTheDocument();

@@ -31,14 +31,14 @@ describe('EnrollmentStatus', () => {
     vi.clearAllMocks();
   });
 
-  it('polls the audit log every 3 seconds for onboarding_complete', async () => {
+  it('polls the audit log every 3 seconds for AGENT_ONBOARDED', async () => {
     renderStatus();
     expect(screen.getByRole('status')).toHaveTextContent(/waiting for the agent/i);
 
     await act(() => vi.advanceTimersByTimeAsync(3_000));
     expect(getAuditLog).toHaveBeenCalledTimes(1);
     expect(getAuditLog).toHaveBeenCalledWith({
-      eventType: 'onboarding_complete',
+      eventType: 'AGENT_ONBOARDED',
       since: TOKEN_CREATED_AT,
     });
 
@@ -50,7 +50,7 @@ describe('EnrollmentStatus', () => {
     getAuditLog
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
-        { id: '1', eventType: 'onboarding_complete', timestamp: '2026-06-01T00:00:05.000Z' },
+        { id: '1', eventType: 'AGENT_ONBOARDED', timestamp: '2026-06-01T00:00:05.000Z' },
       ]);
     renderStatus();
 

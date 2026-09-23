@@ -10,6 +10,7 @@ import type {
   AuditLogEntry,
   EnrollmentTokenInput,
   EnrollmentTokenResult,
+  OnboardAgentResult,
   VcFilters,
   VCSummary,
   VCResponse,
@@ -115,6 +116,24 @@ export const api = {
       method: 'POST',
       body: input,
     }),
+  /**
+   * Single-click onboarding: mints an enrollment token and immediately
+   * redeems it, client-side, back to back — still 2 API calls
+   * (POST /v1/enrollment-tokens, POST /v1/onboard), just triggered by one
+   * console action instead of the owner minting a token for a separate
+   * agent process to redeem later (see createEnrollmentToken, which stays
+   * for that async/headless case).
+   */
+  onboardAgentNow: async (input: EnrollmentTokenInput): Promise<OnboardAgentResult> => {
+    const { token } = await requestJson<EnrollmentTokenResult>('/v1/enrollment-tokens', {
+      method: 'POST',
+      body: input,
+    });
+    return requestJson<OnboardAgentResult>('/v1/onboard', {
+      method: 'POST',
+      body: { enrollmentToken: token, domains: input.requestedDomains },
+    });
+  },
   getAuditLog: async (filters?: AuditFilters): Promise<AuditLogEntry[]> =>
     filters
       ? requestJson<AuditLogEntry[]>('/v1/audit-log', { query: { ...filters } })
