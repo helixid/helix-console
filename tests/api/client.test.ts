@@ -163,21 +163,29 @@ describe('api/client', () => {
       await expect(api.revokeAgent('vc:1')).rejects.toThrow('already revoked');
     });
 
-    it('createEnrollmentToken calls POST /v1/enrollment-tokens', async () => {
+    it('onboardAgentNow mints a token then redeems it, back to back', async () => {
       const { api } = await importApi();
       const origin = window.location.origin;
-      const input = { agentName: 'billing', requestedScopes: ['read:orders'] };
+      const input = { agentName: 'billing', requestedScopes: ['read:orders'], requestedDomains: ['example.com'] };
       fetchMock.mockResolvedValueOnce(jsonResponse({ token: 'enroll:abc', expiresAt: 'later' }));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ agentDid: 'did:key:zAgent', vcId: 'vc:1' }));
 
-      await expect(api.createEnrollmentToken(input)).resolves.toEqual({
-        token: 'enroll:abc',
-        expiresAt: 'later',
+      await expect(api.onboardAgentNow(input)).resolves.toEqual({
+        agentDid: 'did:key:zAgent',
+        vcId: 'vc:1',
       });
-      expect(fetchMock).toHaveBeenCalledWith(
+
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        1,
         `${origin}/v1/enrollment-tokens`,
+        expect.objectContaining({ method: 'POST', body: JSON.stringify(input) }),
+      );
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        `${origin}/v1/onboard`,
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify(input),
+          body: JSON.stringify({ enrollmentToken: 'enroll:abc', domains: input.requestedDomains }),
         }),
       );
 
@@ -186,7 +194,7 @@ describe('api/client', () => {
         status: 400,
         json: async () => ({ error: { message: 'bad scopes' } }),
       } as Response);
-      await expect(api.createEnrollmentToken(input)).rejects.toThrow('bad scopes');
+      await expect(api.onboardAgentNow(input)).rejects.toThrow('bad scopes');
     });
 
     it('getAuditLog calls GET /v1/audit-log', async () => {

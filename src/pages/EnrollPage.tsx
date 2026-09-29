@@ -5,60 +5,59 @@
 //    http://www.apache.org/licenses/LICENSE-2.0
 
 import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import type { EnrollmentTokenInput, EnrollmentTokenResult } from '../api/types';
+import type { EnrollmentTokenInput, OnboardAgentResult } from '../api/types';
 import { EnrollForm } from '../components/enroll/EnrollForm';
-import { EnrollmentStatus } from '../components/enroll/EnrollmentStatus';
-
-interface MintedToken extends EnrollmentTokenResult {
-  createdAt: string;
-}
 
 export function EnrollPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [minted, setMinted] = useState<MintedToken | null>(null);
+  const [onboarded, setOnboarded] = useState<OnboardAgentResult | null>(null);
 
   const handleSubmit = useCallback((input: EnrollmentTokenInput) => {
     setSubmitting(true);
     setError(null);
     api
-      .createEnrollmentToken(input)
-      .then((result) => {
-        setMinted({ ...result, createdAt: new Date().toISOString() });
-      })
+      .onboardAgentNow(input)
+      .then(setOnboarded)
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to mint enrollment token');
+        setError(err instanceof Error ? err.message : 'Failed to onboard agent');
       })
       .finally(() => setSubmitting(false));
   }, []);
+
+  const reset = () => {
+    setOnboarded(null);
+    setError(null);
+  };
 
   return (
     <div className="enroll-page">
       <div className="page-header">
         <div>
           <h1>Enroll an agent</h1>
-          <p className="page-subtitle">
-            Mint a one-time enrollment token and watch it get consumed as the agent onboards.
-          </p>
+          <p className="page-subtitle">Onboard an agent and get its DID back immediately.</p>
         </div>
       </div>
 
-      {minted === null ? (
+      {onboarded !== null ? (
+        <div className="card minted-token">
+          <h2>Agent onboarded</h2>
+          <p className="token-hint">This is the agent&apos;s DID.</p>
+          <code className="token-value">{onboarded.agentDid}</code>
+          <p role="status" className="enrollment-success">
+            VC issued — <Link to="/agents">view in Agents</Link>
+          </p>
+          <button type="button" onClick={reset}>
+            Onboard another agent
+          </button>
+        </div>
+      ) : (
         <div className="card form-card">
           <h2>Agent details</h2>
           {error && <p role="alert">{error}</p>}
           <EnrollForm onSubmit={handleSubmit} submitting={submitting} />
-        </div>
-      ) : (
-        <div className="card minted-token">
-          <h2>Enrollment token</h2>
-          <p className="token-hint">Hand this to the agent; it expires at {minted.expiresAt}.</p>
-          <code className="token-value">{minted.token}</code>
-          <EnrollmentStatus tokenCreatedAt={minted.createdAt} />
-          <button type="button" onClick={() => setMinted(null)}>
-            Mint another token
-          </button>
         </div>
       )}
     </div>

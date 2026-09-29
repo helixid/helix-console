@@ -205,7 +205,7 @@ export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
         />
       </label>
       <button type="submit" disabled={submitting}>
-        {submitting ? 'Minting…' : 'Mint enrollment token'}
+        {submitting ? 'Onboarding…' : 'Onboard now'}
       </button>
     </form>
   );

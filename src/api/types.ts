@@ -57,6 +57,13 @@ export interface EnrollmentTokenResult {
   expiresAt: string;
 }
 
+/** Result of the one-click "Onboard now" flow — mints and redeems an
+ * enrollment token in the same interaction (see api/client.ts onboardAgentNow). */
+export interface OnboardAgentResult {
+  agentDid: string;
+  vcId: string;
+}
+
 export interface AuditFilters {
   eventType?: string;
   since?: string;

@@ -11,7 +11,7 @@ vi.mock('../src/api/client', () => ({
     listAgents: vi.fn(),
     getAgent: vi.fn(),
     revokeAgent: vi.fn(),
-    createEnrollmentToken: vi.fn(),
+    onboardAgentNow: vi.fn(),
     getAuditLog: vi.fn(),
   },
 }));

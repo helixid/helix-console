@@ -10,6 +10,7 @@ import type {
   AuditLogEntry,
   EnrollmentTokenInput,
   EnrollmentTokenResult,
+  OnboardAgentResult,
   VcFilters,
   VCSummary,
   VCResponse,
@@ -110,11 +111,22 @@ export const api = {
     requestJson<VCResponse>(`/v1/vcs/${encodeURIComponent(vcId)}`),
   revokeAgent: async (vcId: string): Promise<{ vcId: string; revoked: true; revokedAt: string }> =>
     requestJson(`/v1/vcs/${encodeURIComponent(vcId)}/revoke`, { method: 'POST' }),
-  createEnrollmentToken: async (input: EnrollmentTokenInput): Promise<EnrollmentTokenResult> =>
-    requestJson<EnrollmentTokenResult>('/v1/enrollment-tokens', {
+  /**
+   * Onboards an agent in one call from the caller's perspective: mints an
+   * enrollment token and immediately redeems it, client-side, back to back
+   * (still 2 API calls internally — POST /v1/enrollment-tokens, then
+   * POST /v1/onboard).
+   */
+  onboardAgentNow: async (input: EnrollmentTokenInput): Promise<OnboardAgentResult> => {
+    const { token } = await requestJson<EnrollmentTokenResult>('/v1/enrollment-tokens', {
       method: 'POST',
       body: input,
-    }),
+    });
+    return requestJson<OnboardAgentResult>('/v1/onboard', {
+      method: 'POST',
+      body: { enrollmentToken: token, domains: input.requestedDomains },
+    });
+  },
   getAuditLog: async (filters?: AuditFilters): Promise<AuditLogEntry[]> =>
     filters
       ? requestJson<AuditLogEntry[]>('/v1/audit-log', { query: { ...filters } })
