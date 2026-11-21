@@ -200,11 +200,11 @@ describe('api/client', () => {
     it('getAuditLog calls GET /v1/audit-log', async () => {
       const { api } = await importApi();
       const origin = window.location.origin;
-      fetchMock.mockResolvedValueOnce(jsonResponse([{ id: '1' }]));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ items: [{ id: '1' }], nextCursor: 'c1' }));
 
-      await expect(api.getAuditLog({ limit: 20 })).resolves.toEqual([{ id: '1' }]);
+      await expect(api.getAuditLog({ limit: 20, cursor: 'c0' })).resolves.toEqual({ items: [{ id: '1' }], nextCursor: 'c1' });
       expect(fetchMock).toHaveBeenCalledWith(
-        `${origin}/v1/audit-log?limit=20`,
+        `${origin}/v1/audit-log?limit=20&cursor=c0`,
         expect.objectContaining({ method: 'GET' }),
       );
 
