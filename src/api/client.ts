@@ -7,7 +7,7 @@
 import { getApiConfig } from '../runtimeConfig';
 import type {
   AuditFilters,
-  AuditLogEntry,
+  AuditLogPage,
   EnrollmentTokenInput,
   EnrollmentTokenResult,
   OnboardAgentResult,
@@ -127,10 +127,10 @@ export const api = {
       body: { enrollmentToken: token, domains: input.requestedDomains },
     });
   },
-  getAuditLog: async (filters?: AuditFilters): Promise<AuditLogEntry[]> =>
+  getAuditLog: async (filters?: AuditFilters): Promise<AuditLogPage> =>
     filters
-      ? requestJson<AuditLogEntry[]>('/v1/audit-log', { query: { ...filters } })
-      : requestJson<AuditLogEntry[]>('/v1/audit-log'),
+      ? requestJson<AuditLogPage>('/v1/audit-log', { query: { ...filters } })
+      : requestJson<AuditLogPage>('/v1/audit-log'),
 };
 
 export type Api = typeof api;

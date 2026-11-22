@@ -66,43 +66,97 @@ export interface OnboardAgentResult {
 
 export interface AuditFilters {
   eventType?: string;
+  family?: string;
   since?: string;
+  /** The `nextCursor` of the previous page. */
+  cursor?: string;
   limit?: number;
 }
 
-/**
- * The activity-trail envelope GET /v1/audit-log returns — a single shape
- * describing issuance, presentation, verification, authorization,
- * invocation, and consent-grant events, so almost every field is optional.
- */
-export interface AuditLogEntry {
-  id: string;
+/** A party: a DID, or a keyed commitment that names no one in the clear. */
+export type AuditPartyRef =
+  | { kind: 'public_did' | 'pairwise_did'; did: string }
+  | { kind: 'keyed_commitment' | 'opaque_ref'; value?: string; keyId?: string };
+
+/** A reference to an encrypted evidence object in the vault. */
+export interface AuditEvidenceRef {
+  objectId: string;
+  ciphertextDigest: string;
+  mediaType?: string;
+  keyId?: string;
+  size?: string;
+}
+
+export interface AuditAuthorization {
+  source: string;
+  decision: string;
+  scopeId?: string;
+  delegationRef?: string;
+  delegationCredentialDigest?: string;
+  delegationChainDigests?: string[];
+  statusEvidence?: AuditEvidenceRef[];
+  grantRef?: string;
+  policyId?: string;
+  policyVersion?: string;
+  policyDigest?: string;
+  verificationCode?: string;
+}
+
+/** The typed producer event (KYA-OS AUDITABILITY.md, story A-1). */
+export interface AuditEvent {
+  eventId: string;
   eventType: string;
-  timestamp: string;
-  subjectDid?: string;
-  vcId?: string;
-  targetService?: string;
-  result?: string;
-  delegatedFrom?: string;
-  delegatedTo?: string;
-  parentVcId?: string;
-  delegationDepth?: number;
-  attemptedVcId?: string;
-  attemptedParentVcId?: string;
-  attemptedDelegatedFrom?: string;
-  issuer?: string;
-  userDid?: string;
-  scopes?: string[];
-  durability?: string;
+  occurredAt: number;
+  action: { category: string; name?: string; detailRef?: AuditEvidenceRef };
+  outcome: 'succeeded' | 'failed' | 'denied' | 'challenged' | 'unknown';
+  details: { family: string; phase: string } & Record<string, unknown>;
   correlationId?: string;
-  credentialType?: string;
-  validUntil?: string;
-  credentialStatus?: string;
-  serviceDid?: string;
-  serviceName?: string;
-  toolName?: string;
-  requiredScope?: string;
-  effectiveScopes?: string[];
-  reason?: string;
-  resultSummary?: string;
+  causationId?: string;
+  actor?: AuditPartyRef;
+  resource?: AuditPartyRef;
+  responsibleParty?: AuditPartyRef;
+  session?: { ref: AuditPartyRef };
+  source: { producer: AuditPartyRef; sourceId: string; sourceSequence?: string };
+  tenantRef?: AuditPartyRef;
+  reason?: { code: string; detailRef?: AuditEvidenceRef };
+  authorization?: AuditAuthorization;
+  proof?: AuditEvidenceRef;
+  evidence?: AuditEvidenceRef[];
+  privacy?: { classification: string; retentionClass: string; legalHold?: string };
+}
+
+/** The recorder's signed receipt (story A-2): `jws` signs `core`. */
+export interface AuditReceipt {
+  core: {
+    ledgerId: string;
+    ledgerEpochId: string;
+    sequence: string;
+    eventId: string;
+    entryDigest: string;
+    previousEntryDigest: string | null;
+    recordedAt: number;
+    recorder: { did: string; kid: string; alg: string };
+    integritySuite: string;
+  };
+  jws: string;
+}
+
+/** One row of helix-api's `GET /v1/audit-log`: the event as recorded, where, and its receipt. */
+export interface AuditLogEntry {
+  /** `<ledgerId>:<ledgerEpochId>:<sequence>`. */
+  id: string;
+  recordedAt: string;
+  eventDigest: string;
+  event: AuditEvent;
+  ledgerId: string;
+  ledgerEpochId: string;
+  sequence: string;
+  entryDigest: string;
+  receipt: AuditReceipt;
+}
+
+/** One page of `GET /v1/audit-log`, newest first; `nextCursor` is null on the last. */
+export interface AuditLogPage {
+  items: AuditLogEntry[];
+  nextCursor: string | null;
 }
