@@ -5,7 +5,7 @@
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
 // These types describe helix-api's *admin* HTTP surface (/v1/vcs,
-// /v1/enrollment-tokens, /v1/audit-log), authenticated with the admin API
+// /v1/agents, /v1/audit-log), authenticated with the admin API
 // key — a different, console-only concern from @helixid/sdk-js's HelixClient
 // (which is the agent/verifier-facing SDK, authenticated per-agent/VP and
 // living in a separate repo since the monorepo split). They previously were
@@ -28,6 +28,8 @@ export interface VcFilters {
 export interface VCSummary {
   vcId: string;
   subjectDid: string;
+  /** AgentIdentityCredential, CapabilityAttestationCredential, DelegationCredential, … (story F-1). */
+  vcType?: string;
   agentName?: string;
   scopes: string[];
   status: VCStatus;
@@ -45,6 +47,7 @@ export interface VCResponse {
   renewedByVcId: string | null;
 }
 
+/** What the Enroll form collects. */
 export interface EnrollmentTokenInput {
   agentName: string;
   requestedScopes: string[];
@@ -52,16 +55,21 @@ export interface EnrollmentTokenInput {
   maxDelegationDepth?: number;
 }
 
-export interface EnrollmentTokenResult {
-  token: string;
-  expiresAt: string;
-}
-
-/** Result of the one-click "Onboard now" flow — mints and redeems an
- * enrollment token in the same interaction (see api/client.ts onboardAgentNow). */
-export interface OnboardAgentResult {
-  agentDid: string;
-  vcId: string;
+/**
+ * POST /v1/agents for a self-custody agent (KYA-OS story F-3): helixid holds
+ * no agent keys, so the agent is created waiting for its key, and the
+ * enrollment token (shown once) is what `helix init` redeems on the agent's
+ * own host.
+ */
+export interface AgentOnboarding {
+  did: string;
+  name: string;
+  keyCustody: 'self';
+  didHosting: 'helix' | 'own';
+  label: string;
+  status: string;
+  enrollmentToken: string;
+  enrollmentExpiresAt?: string;
 }
 
 export interface AuditFilters {
