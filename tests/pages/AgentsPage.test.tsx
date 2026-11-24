@@ -189,6 +189,18 @@ describe('AgentsPage', () => {
     expect(within(panel).getByText(/no prior credentials/i)).toBeInTheDocument();
   });
 
+  it("lists one row per agent from its identity credential when the API types its credentials (story F-1)", async () => {
+    const identity: VCSummary = { ...billing, vcId: 'vc:identity', vcType: 'AgentIdentityCredential', scopes: [] };
+    const { agentName: _name, ...unnamed } = billing;
+    const attestation: VCSummary = { ...unnamed, vcId: 'vc:attestation', vcType: 'CapabilityAttestationCredential', issuedAt: '2026-06-03T00:00:00.000Z' };
+    const hop: VCSummary = { ...unnamed, vcId: 'vc:hop', vcType: 'DelegationCredential', issuedAt: '2026-06-04T00:00:00.000Z' };
+    listAgents.mockResolvedValue([hop, attestation, identity]);
+    renderPage();
+
+    expect(await screen.findByText('billing-agent')).toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+  });
+
   it('surfaces load errors', async () => {
     listAgents.mockRejectedValue(new Error('api unreachable'));
     renderPage();

@@ -12,10 +12,17 @@ import { AgentList } from '../components/agents/AgentList';
 import { AgentDetailPanel } from '../components/agents/AgentDetailPanel';
 import { ActivityIcon, BotIcon, KeyIcon, ShieldIcon } from '../components/layout/icons';
 
-/** One row per DID: the API returns newest first, so keep first occurrence. */
+/**
+ * One row per agent: its identity credential (story F-1), which names it and
+ * whose revocation also revokes its attestations. The API returns newest
+ * first, so a reissued identity wins. Lists without types (older APIs) keep
+ * one row per DID.
+ */
 function latestPerDid(vcs: VCSummary[]): VCSummary[] {
   const seen = new Set<string>();
+  const typed = vcs.some((vc) => vc.vcType !== undefined);
   return vcs.filter((vc) => {
+    if (typed && vc.vcType !== 'AgentIdentityCredential') return false;
     if (seen.has(vc.subjectDid)) return false;
     seen.add(vc.subjectDid);
     return true;
