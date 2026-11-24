@@ -200,9 +200,14 @@ export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
         <input
           type="number"
           min="0"
+          max="5"
           value={maxDelegationDepth}
           onChange={(event) => setMaxDelegationDepth(event.target.value)}
         />
+        <span className="field-hint">
+          How many times its authority may be passed on, 0 to 5; 0 (it cannot delegate) if left blank. Applies to delegations
+          Helix signs; an agent onboarded here keeps its own key and signs its own delegations, which this limit does not cover.
+        </span>
       </label>
       <button type="submit" disabled={submitting}>
         {submitting ? 'Onboarding…' : 'Onboard now'}
