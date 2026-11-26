@@ -53,6 +53,8 @@ export interface EnrollmentTokenInput {
   requestedScopes: string[];
   requestedDomains?: string[];
   maxDelegationDepth?: number;
+  /** Registry v3: "Make discoverable" (default true): listed in the Helix agent registry once active. */
+  discoverable?: boolean;
 }
 
 /**

@@ -125,6 +125,7 @@ export const api = {
         didHosting: 'helix',
         ...(input.requestedDomains?.length ? { requestedDomains: input.requestedDomains } : {}),
         ...(input.maxDelegationDepth !== undefined ? { maxDelegationDepth: input.maxDelegationDepth } : {}),
+        ...(input.discoverable !== undefined ? { discoverable: input.discoverable } : {}),
       },
     }),
   getAuditLog: async (filters?: AuditFilters): Promise<AuditLogPage> =>
