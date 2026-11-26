@@ -6,6 +6,7 @@
 
 import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { EnrollmentTokenInput } from '../../api/types';
+import { DiscoverableField } from '../registry/DiscoverableField';
 
 export interface EnrollFormProps {
   onSubmit: (input: EnrollmentTokenInput) => void;
@@ -59,6 +60,7 @@ export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
   const [scopeQuery, setScopeQuery] = useState('');
   const [domains, setDomains] = useState('');
   const [maxDelegationDepth, setMaxDelegationDepth] = useState('');
+  const [discoverable, setDiscoverable] = useState(true);
   const [scopeError, setScopeError] = useState<string | null>(null);
   const scopeInputId = useId();
   const scopeHelpId = useId();
@@ -81,6 +83,7 @@ export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
       requestedScopes,
       ...(requestedDomains.length > 0 ? { requestedDomains } : {}),
       ...(depth !== undefined && !Number.isNaN(depth) ? { maxDelegationDepth: depth } : {}),
+      discoverable,
     });
   };
 
@@ -200,10 +203,16 @@ export function EnrollForm({ onSubmit, submitting }: EnrollFormProps) {
         <input
           type="number"
           min="0"
+          max="5"
           value={maxDelegationDepth}
           onChange={(event) => setMaxDelegationDepth(event.target.value)}
         />
+        <span className="field-hint">
+          How many times its authority may be passed on, 0 to 5; 0 (it cannot delegate) if left blank. Applies to delegations
+          Helix signs; an agent onboarded here keeps its own key and signs its own delegations, which this limit does not cover.
+        </span>
       </label>
+      <DiscoverableField checked={discoverable} onChange={setDiscoverable} disabled={submitting} />
       <button type="submit" disabled={submitting}>
         {submitting ? 'Onboarding…' : 'Onboard now'}
       </button>

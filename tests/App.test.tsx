@@ -11,7 +11,7 @@ vi.mock('../src/api/client', () => ({
     listAgents: vi.fn(),
     getAgent: vi.fn(),
     revokeAgent: vi.fn(),
-    onboardAgentNow: vi.fn(),
+    createAgent: vi.fn(),
     getAuditLog: vi.fn(),
   },
 }));
@@ -34,15 +34,44 @@ describe('App shell + routing', () => {
     localStorage.clear();
     delete window.__HELIXID_CONFIG__;
     mocked.listAgents.mockResolvedValue([]);
-    mocked.getAuditLog.mockResolvedValue([
-      {
-        id: '1',
-        eventType: 'vc_revoked',
-        timestamp: '2026-06-01T12:00:00.000Z',
-        subjectDid: 'did:hedera:testnet:billing',
-        vcId: 'vc:helix:billing',
-      },
-    ]);
+    mocked.getAuditLog.mockResolvedValue({
+      items: [
+        {
+          id: 'ledger_a:epoch_1:1',
+          recordedAt: '2026-06-01T12:00:00.000Z',
+          eventDigest: `sha256:${'1'.repeat(64)}`,
+          event: {
+            eventId: 'evt-1',
+            eventType: 'delegation.revoked',
+            occurredAt: Date.parse('2026-06-01T12:00:00.000Z'),
+            action: { category: 'credential', name: 'revoked' },
+            outcome: 'succeeded',
+            resource: { kind: 'public_did', did: 'did:hedera:testnet:billing' },
+            source: { producer: { kind: 'public_did', did: 'did:web:api.example' }, sourceId: 'helix-api' },
+            details: { family: 'delegation', phase: 'revoked', delegationRef: 'vc:helix:billing' },
+          },
+          ledgerId: 'ledger_a',
+          ledgerEpochId: 'epoch_1',
+          sequence: '1',
+          entryDigest: `sha256:${'2'.repeat(64)}`,
+          receipt: {
+            core: {
+              ledgerId: 'ledger_a',
+              ledgerEpochId: 'epoch_1',
+              sequence: '1',
+              eventId: 'evt-1',
+              entryDigest: `sha256:${'2'.repeat(64)}`,
+              previousEntryDigest: `sha256:${'3'.repeat(64)}`,
+              recordedAt: Date.parse('2026-06-01T12:00:00.000Z'),
+              recorder: { did: 'did:key:z6MkRecorder', kid: 'z6MkRecorder', alg: 'EdDSA' },
+              integritySuite: 'org.kya-os.audit-integrity.v1',
+            },
+            jws: 'eyJ.sig',
+          },
+        },
+      ],
+      nextCursor: null,
+    });
   });
 
   it('redirects an unauthenticated visit to the login page', async () => {
@@ -68,7 +97,7 @@ describe('App shell + routing', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('navigates to the Audit page and shows deep-linked events', async () => {
+  it('navigates to the Audit page and links an opened event\'s DIDs to the Agents page', async () => {
     sessionStorage.setItem(AUTH_KEY, 'true');
     renderApp('/');
     await screen.findByRole('heading', { name: 'Agents' });
@@ -78,7 +107,9 @@ describe('App shell + routing', () => {
     expect(
       await screen.findByRole('heading', { name: /audit & governance/i }),
     ).toBeInTheDocument();
-    expect(mocked.getAuditLog).toHaveBeenCalledWith({ limit: 100 });
+    expect(mocked.getAuditLog).toHaveBeenCalledWith({ limit: 50 });
+    // Opening the row shows its parties, each DID linked to the Agents page.
+    await userEvent.click(await screen.findByRole('button', { name: /Credential revoked/ }));
     expect(
       await screen.findByRole('link', { name: /did:hedera:testnet:billing/ }),
     ).toHaveAttribute(
