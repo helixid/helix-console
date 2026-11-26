@@ -50,7 +50,7 @@ describe('EnrollPage', () => {
 
     await submit();
 
-    expect(createAgent).toHaveBeenCalledWith({ agentName: 'billing-agent', requestedScopes: ['read:orders'] });
+    expect(createAgent).toHaveBeenCalledWith({ agentName: 'billing-agent', requestedScopes: ['read:orders'], discoverable: true });
     const region = await screen.findByRole('region', { name: 'Agent enrollment' });
     expect(within(region).getByText('Agent created — run helix init')).toBeInTheDocument();
     expect(within(region).getByText(CREATED.did)).toBeInTheDocument();

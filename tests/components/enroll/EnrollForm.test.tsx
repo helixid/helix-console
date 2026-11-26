@@ -19,6 +19,7 @@ describe('EnrollForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       agentName: 'billing-agent',
       requestedScopes: ['read:orders'],
+      discoverable: true,
       requestedDomains: ['example.com'],
       maxDelegationDepth: 2,
     });
@@ -35,6 +36,7 @@ describe('EnrollForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       agentName: 'simple-agent',
       requestedScopes: ['custom:billing'],
+      discoverable: true,
     });
   });
 
@@ -55,6 +57,7 @@ describe('EnrollForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       agentName: 'billing-agent',
       requestedScopes: ['custom:enter-scope'],
+      discoverable: true,
     });
   });
 
@@ -75,6 +78,7 @@ describe('EnrollForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       agentName: 'billing-agent',
       requestedScopes: ['custom:only'],
+      discoverable: true,
     });
   });
 
@@ -91,6 +95,7 @@ describe('EnrollForm', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       agentName: 'billing-agent',
       requestedScopes: ['custom:a', 'custom:b'],
+      discoverable: true,
     });
   });
 
@@ -103,5 +108,20 @@ describe('EnrollForm', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/add at least one requested scope/i);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('offers "Make discoverable", checked by default, with an info icon saying what it means (registry v3)', async () => {
+    const onSubmit = vi.fn();
+    render(<EnrollForm onSubmit={onSubmit} submitting={false} />);
+    const box = screen.getByRole('checkbox', { name: /make discoverable/i });
+    expect(box).toBeChecked();
+    expect(box).toHaveAccessibleDescription('This agent will be listed in the Helix registry, where anyone can find it.');
+    expect(screen.getByRole('button', { name: /about make discoverable/i })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/agent name/i), 'quiet-agent');
+    await userEvent.type(screen.getByLabelText(/requested scopes/i), 'custom:a');
+    await userEvent.click(box);
+    expect(box).not.toBeChecked();
+    await userEvent.click(screen.getByRole('button', { name: /onboard now/i }));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ discoverable: false }));
   });
 });

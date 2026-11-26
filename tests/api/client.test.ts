@@ -194,6 +194,14 @@ describe('api/client', () => {
         expect.objectContaining({ body: JSON.stringify({ name: 'plain', scopes: ['read:orders'], keyCustody: 'self', didHosting: 'helix' }) }),
       );
 
+      // Registry v3: the "Make discoverable" choice goes with it.
+      fetchMock.mockResolvedValueOnce(jsonResponse(created));
+      await api.createAgent({ agentName: 'quiet', requestedScopes: ['read:orders'], discoverable: false });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `${origin}/v1/agents`,
+        expect.objectContaining({ body: JSON.stringify({ name: 'quiet', scopes: ['read:orders'], keyCustody: 'self', didHosting: 'helix', discoverable: false }) }),
+      );
+
       fetchMock.mockResolvedValueOnce({
         ok: false,
         status: 400,
