@@ -1,0 +1,830 @@
+/* ------------------------------------------------------------------ *
+ * Agent passport (components/agents/passport/).
+ * The Agents page as passports: a grid of passport covers, and a
+ * spread whose left page is the agent's identity and whose right-hand
+ * "visa pages" are the credential wallet, unchanged.
+ *
+ * A file of its own, loaded after styles.css, so this work never edits
+ * the lines of styles.css that the wallet (T1.P2.3) and registry
+ * (T2.P0.1) branches own.
+ *
+ * Colour comes from the existing tokens only. Covers are dark in both
+ * themes, like the sidebar: the cards, the spread's binding and bar and
+ * the opening leaf carry data-theme="dark", which gives them the dark
+ * token set wherever they sit. New text uses --ink-muted rather than
+ * --ink-faint, which does not reach AA on small type.
+ *
+ * Nothing that wraps the wallet may keep a transform, filter,
+ * backdrop-filter, perspective, contain or container-type: the wallet's
+ * drawer is position: fixed and would be trapped inside it.
+ * ------------------------------------------------------------------ */
+
+/* Grid: one to four covers a row. A cover never drops below 230px (or below
+   the grid, when that is narrower), and the max() term stops a fifth column
+   appearing on very wide screens — the wallet grid's rule, at four. */
+
+.passport-grid {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(min(230px, 100%), calc((100% - 48px) / 4)), 1fr)
+  );
+}
+
+.passport-grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.passport-grid__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.passport-grid__error button {
+  padding: 5px 11px;
+  font-size: 12.5px;
+}
+
+.passport-grid__empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.passport-grid__empty p {
+  margin: 0;
+}
+
+/* The cover. Passport proportions (5:7) until the content needs more; a
+   lone cover in a wide column stops at 340px rather than ballooning.
+   overflow: clip rather than hidden: hidden makes a scroll container, which
+   switches off the aspect ratio's content-based minimum, so a cover with
+   many scopes would spill instead of growing. */
+
+.passport-card {
+  --passport-accent: var(--accent);
+  --passport-glow: var(--accent-glow);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-width: 340px;
+  aspect-ratio: 5 / 7;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 16px 14px;
+  overflow: clip;
+  color: var(--ink);
+  background:
+    radial-gradient(120% 65% at 100% 0%, var(--passport-glow), transparent 62%),
+    repeating-radial-gradient(circle at 0% 100%, transparent 0 11px, var(--hairline) 11px 12px),
+    var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.passport-card > * {
+  flex-shrink: 0;
+}
+
+.passport-card:hover,
+.passport-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card), 0 16px 32px -18px var(--passport-glow);
+}
+
+.passport-card__cover {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.passport-card__mark {
+  flex: none;
+  width: 18px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.passport-card__label {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.passport-card .discoverable-badge {
+  flex: none;
+  /* Above the name button's stretched hit area and the identity block, so its tooltip can be hovered and read. */
+  z-index: 3;
+}
+
+/* The card clips what overflows it: the tooltip opens below the mark, within the card's width. */
+.passport-card .discoverable-badge__tip {
+  left: -78px;
+  right: auto;
+  width: 196px;
+}
+
+.passport-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.passport-card .passport-avatar {
+  flex: none;
+  width: 58px;
+  height: 58px;
+}
+
+/* minmax(0, 1fr): an auto track would grow to the DID's unbroken width and
+   push the copy icon off a narrow cover, instead of shortening the DID. */
+.passport-card__who {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 2px;
+}
+
+.passport-card__name {
+  max-width: 100%;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.passport-card__open {
+  max-width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* The name is the button; this stretches its hit area over the whole cover.
+   The copy button and the +N chip sit above it. */
+.passport-card__open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.passport-card__open:focus-visible {
+  outline: none;
+}
+
+.passport-card__open:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.passport-card .did-copy {
+  position: relative;
+  z-index: 1;
+  margin-left: -6px;
+  max-width: calc(100% + 6px);
+  font-size: 12px;
+}
+
+/* On a cover an identifier is cut short, never wrapped. */
+.passport-card .copy-button__text {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.passport-card__scopes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 28px;
+}
+
+.passport-card .scope-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Above the hit area, so its tooltip naming the other scopes can show. */
+.passport-card .scope-chip--more {
+  position: relative;
+  z-index: 1;
+  cursor: help;
+}
+
+.passport-card__none {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.passport-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  font-size: 12.5px;
+}
+
+.passport-card__key {
+  margin-right: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.passport-card__facts time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.passport-card__badge {
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-strong);
+}
+
+/* Past passports step back. Expired: the colour drains out of the cover,
+   but the stamp keeps its own. Revoked: muted, and the stamp gets heavier.
+   Text stays at --ink-muted, never fainter. */
+
+.passport-card--expired,
+.passport-card--revoked {
+  --passport-accent: var(--ink-muted);
+  --passport-glow: transparent;
+}
+
+.passport-card--expired .passport-card__mark,
+.passport-card--revoked .passport-card__mark {
+  filter: grayscale(1);
+}
+
+.passport-card--revoked .passport-card__open,
+.passport-card--revoked .scope-chip {
+  color: var(--ink-muted);
+}
+
+.passport-card--revoked .passport-avatar {
+  opacity: 0.55;
+}
+
+/* Loading placeholders. */
+
+.passport-card--skeleton {
+  gap: 16px;
+}
+
+.passport-card--skeleton:hover {
+  transform: none;
+  box-shadow: var(--shadow-card);
+}
+
+.passport-card__skeleton-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+
+/* ---------------------------------------------------------------- */
+/* Pieces shared by the cover and the identity page                  */
+/* ---------------------------------------------------------------- */
+
+.passport-avatar {
+  display: block;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+}
+
+.passport-avatar__cell--solid,
+.passport-avatar__cell--soft {
+  fill: var(--passport-accent, var(--accent));
+}
+
+.passport-avatar__cell--soft {
+  opacity: 0.45;
+}
+
+/* A rubber stamp: a ruled box, a glyph and a word, tilted as if pressed by
+   hand. Never the only signal — the word is there. It takes no pointer
+   events, so a press on it still opens the cover beneath. */
+
+.passport-stamp {
+  --stamp-ink: var(--success);
+  align-self: flex-end;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  margin: -6px 6px 0 0;
+  pointer-events: none;
+}
+
+.passport-stamp--expired {
+  --stamp-ink: var(--warning);
+}
+
+.passport-stamp--revoked {
+  --stamp-ink: var(--danger);
+}
+
+.passport-stamp__ink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 3px;
+  border: 2px solid var(--stamp-ink);
+  border-radius: 6px;
+  outline: 1px solid var(--stamp-ink);
+  outline-offset: 2px;
+  color: var(--stamp-ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+}
+
+.passport-stamp__ink svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  stroke-width: 2.6;
+}
+
+.passport-stamp--revoked .passport-stamp__ink {
+  border-width: 3px;
+  font-size: 13px;
+  transform: rotate(-11deg);
+}
+
+.passport-stamp__caption {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.passport-stamp--page {
+  align-self: auto;
+  margin: 0;
+}
+
+.passport-stamp--page .passport-stamp__ink {
+  padding: 6px 15px 5px;
+  border-width: 3px;
+  font-size: 15px;
+}
+
+.passport-stamp--page .passport-stamp__ink svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The machine-readable strip: the bottom edge of every page. Decorative,
+   cut at the edge rather than wrapped. */
+
+.passport-mrz {
+  display: grid;
+  gap: 1px;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed var(--hairline-strong);
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  color: var(--ink-muted);
+}
+
+.passport-mrz span {
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------------- */
+/* The open passport                                                 */
+/* ---------------------------------------------------------------- */
+
+/* The overlay scrolls when the stacked pages outgrow the screen; margin:auto
+   on the dialog centres it without cutting off its top when it does. No
+   backdrop-filter here: it would become the drawer's containing block. */
+.passport-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--scrim);
+  animation: scrim-in 0.18s ease;
+}
+
+.passport-detail {
+  position: relative;
+  width: min(1200px, 100%);
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: calc(var(--radius) + 6px);
+  animation: passport-in 0.22s ease;
+}
+
+/* Only ever focused from script, as the fallback target inside the dialog. */
+.passport-detail:focus {
+  outline: none;
+}
+
+@keyframes passport-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The cover's leather, behind both pages. */
+.passport-detail__binding {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    radial-gradient(60% 40% at 0% 0%, var(--accent-glow), transparent 70%),
+    repeating-linear-gradient(135deg, transparent 0 7px, var(--hairline) 7px 8px),
+    var(--surface);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--shadow-card);
+}
+
+.passport-detail__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 0 8px;
+  color: var(--ink);
+}
+
+.passport-detail__mark {
+  width: 20px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.passport-detail__label {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.passport-detail__bar button {
+  padding: 6px 13px;
+  font-size: 13px;
+}
+
+.passport-detail > .toast {
+  margin: 0;
+}
+
+.passport-detail__spread {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.passport-page {
+  min-width: 0;
+  padding: 22px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+}
+
+/* The identity page: a faint guilloche, like a data page. */
+.passport-identity {
+  --passport-accent: var(--accent);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background:
+    radial-gradient(90% 45% at 100% 0%, var(--accent-soft), transparent 70%),
+    repeating-radial-gradient(circle at 50% 115%, transparent 0 15px, var(--hairline) 15px 16px),
+    var(--surface);
+}
+
+.passport-detail--expired .passport-identity,
+.passport-detail--revoked .passport-identity {
+  --passport-accent: var(--ink-muted);
+}
+
+.passport-detail--revoked .passport-identity .passport-avatar {
+  opacity: 0.55;
+}
+
+.passport-identity__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.passport-identity .passport-avatar {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+}
+
+.passport-identity__who {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 4px;
+}
+
+.passport-identity__name {
+  font-size: 22px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* Pulled left so the DID lines up with the name above it. */
+.passport-identity .did-copy {
+  margin-left: -6px;
+  max-width: calc(100% + 6px);
+  font-size: 12px;
+  text-align: left;
+}
+
+.passport-identity__standing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+}
+
+.passport-identity__reason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.passport-identity .visibility-control {
+  margin-top: 0;
+}
+
+.passport-identity__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px 18px;
+  margin: 0;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+}
+
+.passport-field {
+  min-width: 0;
+}
+
+.passport-field--wide {
+  grid-column: 1 / -1;
+}
+
+.passport-field dt {
+  margin-bottom: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.passport-field dd {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.passport-field code,
+.passport-field time {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.passport-copyable {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.passport-copyable .copy-button {
+  margin-top: -3px;
+}
+
+.passport-muted {
+  color: var(--ink-muted);
+}
+
+.passport-identity__revoke {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.passport-identity__revoke .field-help {
+  color: var(--ink-muted);
+}
+
+/* The visa pages: ruled, and holding the wallet exactly as the old panel
+   did. The .agent-detail class keeps the wallet's own scoped rules; only
+   that panel's spacing and entrance are undone here. */
+.passport-visa.agent-detail {
+  margin: 0;
+  padding: 22px;
+  animation: none;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 31px, var(--hairline) 31px 32px),
+    var(--surface);
+}
+
+/* The wallet's single-credential row has a narrower first column on a visa
+   page than in the old full-width panel: let the status pill drop under the
+   type label there, rather than run over it. */
+@container (min-width: 700px) {
+  .passport-visa .wallet__grid--single .cred-card__header {
+    flex-wrap: wrap;
+  }
+
+  .passport-visa .wallet__grid--single .cred-card__open {
+    flex-basis: auto;
+  }
+}
+
+/* The leaf that swings open on the way in; only drawn on a spread. */
+.passport-detail__leaf {
+  display: none;
+}
+
+@keyframes passport-leaf-open {
+  from {
+    transform: perspective(1800px) rotateY(0deg);
+  }
+  to {
+    transform: perspective(1800px) rotateY(-180deg);
+    visibility: hidden;
+  }
+}
+
+/* Two pages side by side, each scrolling on its own, with the fold between
+   them drawn as a shadow on either side of the spine. */
+@media (min-width: 1080px) {
+  .passport-detail {
+    height: min(880px, 100%);
+  }
+
+  .passport-detail__spread {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(330px, 400px) minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .passport-page {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .passport-identity {
+    grid-area: 1 / 1;
+    border-right: none;
+    border-radius: var(--radius) 0 0 var(--radius);
+    box-shadow: inset -22px 0 22px -22px var(--scrim);
+  }
+
+  .passport-visa.agent-detail {
+    grid-area: 1 / 2;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    box-shadow: inset 22px 0 22px -22px var(--scrim);
+  }
+
+  .passport-detail__leaf {
+    grid-area: 1 / 2;
+    z-index: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    pointer-events: none;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    background:
+      radial-gradient(80% 50% at 50% 30%, var(--accent-glow), transparent 70%),
+      var(--surface);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    transform-origin: left center;
+    backface-visibility: hidden;
+    /* Held shut until the spread has faded in, then opened. */
+    animation: passport-leaf-open 0.5s cubic-bezier(0.3, 0.7, 0.2, 1) 0.18s forwards;
+  }
+
+  .passport-detail__leaf img {
+    width: 56px;
+    height: 66px;
+    object-fit: contain;
+  }
+}
+
+@media (max-width: 560px) {
+  .passport-overlay {
+    padding: 0;
+  }
+
+  .passport-detail {
+    min-height: 100%;
+    padding: 8px;
+    border-radius: 0;
+  }
+
+  .passport-page {
+    padding: 18px 16px;
+  }
+}
+
+/* Reduced motion: no lift, no entrance, no leaf. The leaf is not even
+   rendered then (PassportDetail checks the same query); this covers a
+   preference changed while the page is open. */
+.passport-overlay--still,
+.passport-overlay--still .passport-detail {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .passport-card,
+  .passport-overlay,
+  .passport-detail {
+    animation: none;
+    transition: none;
+  }
+
+  .passport-card:hover,
+  .passport-card:focus-within {
+    transform: none;
+  }
+
+  .passport-detail__leaf {
+    display: none;
+  }
+}

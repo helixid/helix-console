@@ -4,12 +4,18 @@
 // You may obtain a copy of the License at
 //    http://www.apache.org/licenses/LICENSE-2.0
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { VCResponse, VCSummary } from '../api/types';
-import { AgentList } from '../components/agents/AgentList';
-import { AgentDetailPanel } from '../components/agents/AgentDetailPanel';
+import { PassportDetail } from '../components/agents/passport/PassportDetail';
+import { PassportGrid } from '../components/agents/passport/PassportGrid';
+import { toPassportAgent, type PassportAgent } from '../components/agents/passport/passportModel';
+import {
+  LOADING_WALLET,
+  eagerDetailIds,
+  type WalletState,
+} from '../components/agents/wallet/credentialModel';
 import { ActivityIcon, BotIcon, KeyIcon, ShieldIcon } from '../components/layout/icons';
 
 /**
@@ -29,17 +35,55 @@ function latestPerDid(vcs: VCSummary[]): VCSummary[] {
   });
 }
 
+/**
+ * GET /v1/vcs/:vcId for each id. One failure never sinks the rest — a card
+ * whose VC did not load still renders from its list summary.
+ */
+async function fetchDetails(
+  vcIds: string[],
+): Promise<Pick<WalletState, 'details' | 'failed'>> {
+  const results = await Promise.allSettled(vcIds.map((vcId) => api.getAgent(vcId)));
+  const details: Record<string, VCResponse> = {};
+  const failed: Record<string, string> = {};
+  results.forEach((result, index) => {
+    const vcId = vcIds[index]!;
+    if (result.status === 'fulfilled') {
+      details[vcId] = result.value;
+    } else {
+      failed[vcId] =
+        result.reason instanceof Error ? result.reason.message : 'Failed to load agent detail';
+    }
+  });
+  return { details, failed };
+}
+
+function without<T>(record: Record<string, T>, keys: string[]): Record<string, T> {
+  const next = { ...record };
+  for (const key of keys) delete next[key];
+  return next;
+}
+
 export function AgentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const subjectDidFilter = searchParams.get('subjectDid');
 
-  const [agents, setAgents] = useState<VCSummary[]>([]);
+  const [summaries, setSummaries] = useState<VCSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<VCSummary | null>(null);
-  const [detail, setDetail] = useState<VCResponse | null>(null);
-  const [history, setHistory] = useState<VCSummary[]>([]);
+  const [selected, setSelected] = useState<PassportAgent | null>(null);
+  const [wallet, setWallet] = useState<WalletState>(LOADING_WALLET);
   const [toast, setToast] = useState<string | null>(null);
+  // Bumped whenever the passport is opened, re-opened or closed. A response
+  // that comes back under an older number belongs to a wallet that is no
+  // longer on screen, and is dropped.
+  const generation = useRef(0);
+  // Detail requests in flight, so asking twice for the same VC (a double
+  // click, StrictMode's doubled effect) is still one request.
+  const inFlight = useRef(new Set<string>());
+  // The card that opened the passport, so closing it hands focus back there.
+  const opener = useRef<HTMLElement | null>(null);
+
+  const agents = useMemo(() => summaries.map(toPassportAgent), [summaries]);
 
   const loadAgents = useCallback(async () => {
     setLoading(true);
@@ -48,7 +92,7 @@ export function AgentsPage() {
       const result = await api.listAgents(
         subjectDidFilter ? { subjectDid: subjectDidFilter } : undefined,
       );
-      setAgents(latestPerDid(result));
+      setSummaries(latestPerDid(result));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load agents');
     } finally {
@@ -60,43 +104,128 @@ export function AgentsPage() {
     void loadAgents();
   }, [loadAgents]);
 
-  const loadDetail = useCallback(async (agent: VCSummary) => {
-    const [detailResult, historyResult] = await Promise.all([
-      api.getAgent(agent.vcId),
-      api.listAgents({ subjectDid: agent.subjectDid }),
+  /** Re-reads the list after a change made in the passport, without the loading flash. */
+  const refreshAgents = useCallback(async () => {
+    try {
+      const next = latestPerDid(
+        await api.listAgents(subjectDidFilter ? { subjectDid: subjectDidFilter } : undefined),
+      );
+      setSummaries(next);
+      setSelected((current) => {
+        if (current === null) return current;
+        const match = next.find((vc) => vc.subjectDid === current.agentDid);
+        return match === undefined ? current : toPassportAgent(match);
+      });
+    } catch {
+      // The grid keeps what it had; Refresh is still there.
+    }
+  }, [subjectDidFilter]);
+
+  /**
+   * Loads the agent's wallet: every credential issued to its DID, plus the
+   * full VC for the first few cards (see EAGER_DETAIL_LIMIT). `alsoDetail`
+   * names VCs that were already on screen, so a re-load after Revoke
+   * refreshes them rather than blanking them. Rejects only when the list
+   * itself cannot be loaded.
+   */
+  const loadWallet = useCallback(async (agent: PassportAgent, alsoDetail: string[] = []) => {
+    const startedAt = generation.current;
+    const held = await api.listAgents({ subjectDid: agent.agentDid });
+    const listed = new Set(held.map((summary) => summary.vcId));
+    const wanted = new Set([
+      ...eagerDetailIds(held),
+      ...alsoDetail.filter((vcId) => listed.has(vcId)),
     ]);
-    setDetail(detailResult);
-    setHistory(historyResult);
+    const { details, failed } = await fetchDetails([...wanted]);
+    if (generation.current !== startedAt) return;
+    setWallet({ phase: 'ready', message: '', summaries: held, details, failed, pending: {} });
+    const firstFailure = Object.values(failed)[0];
+    if (firstFailure !== undefined) setToast(firstFailure);
   }, []);
 
   const handleSelect = useCallback(
-    (agent: VCSummary) => {
+    (agent: PassportAgent) => {
+      generation.current += 1;
+      const openedAt = generation.current;
+      inFlight.current.clear();
       setSelected(agent);
-      setDetail(null);
-      setHistory([]);
-      void loadDetail(agent).catch((err: unknown) => {
-        setToast(err instanceof Error ? err.message : 'Failed to load agent detail');
+      setWallet(LOADING_WALLET);
+      void loadWallet(agent).catch((err: unknown) => {
+        if (generation.current !== openedAt) return;
+        const message = err instanceof Error ? err.message : 'Failed to load agent detail';
+        setWallet({ ...LOADING_WALLET, phase: 'error', message });
+        setToast(message);
       });
     },
-    [loadDetail],
+    [loadWallet],
   );
 
-  // Revocation is confirmed-then-shown: the badge flips only after the API
-  // succeeds and the detail is re-fetched (dev spec §5.1).
-  const handleRevoke = useCallback(async () => {
-    if (!selected) return;
-    try {
-      await api.revokeAgent(selected.vcId);
-      await loadDetail(selected);
-      setToast(`Revoked ${selected.vcId}`);
-    } catch (err: unknown) {
-      setToast(err instanceof Error ? err.message : 'Revocation failed');
-    }
-  }, [selected, loadDetail]);
+  const handleOpen = useCallback(
+    (agent: PassportAgent, trigger: HTMLElement) => {
+      opener.current = trigger;
+      handleSelect(agent);
+    },
+    [handleSelect],
+  );
+
+  /** Fetches VCs that were not loaded up front — a card was opened, or "Load the rest". */
+  const loadDetails = useCallback(async (vcIds: string[]) => {
+    const startedAt = generation.current;
+    const wanted = vcIds.filter((vcId) => !inFlight.current.has(vcId));
+    if (wanted.length === 0) return;
+    for (const vcId of wanted) inFlight.current.add(vcId);
+    setWallet((current) => ({
+      ...current,
+      failed: without(current.failed, wanted),
+      pending: {
+        ...current.pending,
+        ...Object.fromEntries(wanted.map((vcId): [string, true] => [vcId, true])),
+      },
+    }));
+
+    const { details, failed } = await fetchDetails(wanted);
+    for (const vcId of wanted) inFlight.current.delete(vcId);
+    if (generation.current !== startedAt) return;
+    setWallet((current) => ({
+      ...current,
+      details: { ...current.details, ...details },
+      failed: { ...current.failed, ...failed },
+      pending: without(current.pending, wanted),
+    }));
+    const firstFailure = Object.values(failed)[0];
+    if (firstFailure !== undefined) setToast(firstFailure);
+  }, []);
+
+  // Revocation is confirmed-then-shown: the status flips only after the API
+  // succeeds and the wallet is re-fetched (dev spec §5.1). The grid is
+  // re-read too, since revoking the agent's own credential revokes the agent.
+  const handleRevoke = useCallback(
+    async (agent: PassportAgent, vcId: string, loadedVcIds: string[]) => {
+      try {
+        await api.revokeAgent(vcId);
+        await loadWallet(agent, loadedVcIds);
+        setToast(`Revoked ${vcId}`);
+        void refreshAgents();
+      } catch (err: unknown) {
+        setToast(err instanceof Error ? err.message : 'Revocation failed');
+      }
+    },
+    [loadWallet, refreshAgents],
+  );
 
   const activeCount = agents.filter((a) => a.status === 'active').length;
   const revokedCount = agents.filter((a) => a.status === 'revoked').length;
-  const delegatedCount = agents.filter((a) => a.parentVcId).length;
+  const delegatedCount = agents.filter((a) => a.delegatedFromVcId).length;
+
+  // An open passport covers the page, so the toast shows inside it instead.
+  const toastNode = toast && (
+    <p role="status" className="toast">
+      {toast}{' '}
+      <button type="button" onClick={() => setToast(null)}>
+        Dismiss
+      </button>
+    </p>
+  );
 
   return (
     <div className="agents-page">
@@ -130,11 +259,11 @@ export function AgentsPage() {
             <span className="stat-icon">
               <ShieldIcon />
             </span>
-            <span className="stat-hint">↗ based on issued VCs</span>
+            <span className="stat-hint">↗ own credential valid</span>
           </div>
           <div>
             <div className="stat-value">{activeCount}</div>
-            <div className="stat-label">Active Credentials</div>
+            <div className="stat-label">Active Agents</div>
           </div>
         </div>
         <div className="stat-card card">
@@ -142,7 +271,7 @@ export function AgentsPage() {
             <span className="stat-icon">
               <KeyIcon />
             </span>
-            <span className="stat-hint">↘ revoked VCs</span>
+            <span className="stat-hint">↘ revoked or expired</span>
           </div>
           <div>
             <div className="stat-value">{revokedCount}</div>
@@ -154,7 +283,7 @@ export function AgentsPage() {
             <span className="stat-icon">
               <ActivityIcon />
             </span>
-            <span className="stat-hint">↗ delegation chains</span>
+            <span className="stat-hint">↗ hold delegated authority</span>
           </div>
           <div>
             <div className="stat-value">{delegatedCount}</div>
@@ -172,34 +301,30 @@ export function AgentsPage() {
         </p>
       )}
 
-      {toast && (
-        <p role="status" className="toast">
-          {toast}{' '}
-          <button type="button" onClick={() => setToast(null)}>
-            Dismiss
-          </button>
-        </p>
-      )}
+      {!selected && toastNode}
 
-      {loading && <p className="loading-note">Loading agents…</p>}
-      {error && <p role="alert">{error}</p>}
-      {!loading && !error && (
-        <div className="card table-card">
-          <AgentList
-            agents={agents}
-            onSelect={handleSelect}
-            selectedVcId={selected?.vcId}
-          />
-        </div>
-      )}
+      <PassportGrid
+        agents={agents}
+        loading={loading}
+        error={error}
+        filtered={subjectDidFilter !== null}
+        onRetry={() => void loadAgents()}
+        onOpen={handleOpen}
+      />
 
       {selected && (
-        <AgentDetailPanel
-          summary={history.find((vc) => vc.vcId === selected.vcId) ?? selected}
-          detail={detail}
-          history={history}
-          onRevoke={handleRevoke}
-          onClose={() => setSelected(null)}
+        <PassportDetail
+          agent={selected}
+          wallet={wallet}
+          notice={toastNode}
+          returnFocusRef={opener}
+          onRetry={() => handleSelect(selected)}
+          onLoadDetails={(vcIds) => void loadDetails(vcIds)}
+          onRevoke={(vcId) => handleRevoke(selected, vcId, Object.keys(wallet.details))}
+          onClose={() => {
+            generation.current += 1;
+            setSelected(null);
+          }}
         />
       )}
     </div>

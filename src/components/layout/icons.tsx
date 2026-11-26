@@ -51,3 +51,104 @@ export function KeyIcon() {
     </svg>
   );
 }
+
+export function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+    </svg>
+  );
+}
+
+export function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <path d="M4 12.5l5 5L20 6.5" />
+    </svg>
+  );
+}
+
+export function ServerIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <rect x="3" y="4" width="18" height="7" rx="2" />
+      <rect x="3" y="13" width="18" height="7" rx="2" />
+      <path d="M7 7.5h.01M7 16.5h.01" />
+    </svg>
+  );
+}
+
+export function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.6-6 8-6s8 2 8 6" />
+    </svg>
+  );
+}
+
+export function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+export function BanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.6 5.6l12.8 12.8" />
+    </svg>
+  );
+}
+
+export function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M3 10h18" />
+    </svg>
+  );
+}
+
+export function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" />
+    </svg>
+  );
+}
+
+export function GlobeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z" />
+    </svg>
+  );
+}
+
+export function FlagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <path d="M5 21V4" />
+      <path d="M5 4h12l-2.5 4.5L17 13H5" />
+    </svg>
+  );
+}
+
+/** Settings: a sliders glyph. */
+export function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeProps}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+      <circle cx="9" cy="6" r="2" />
+      <circle cx="15" cy="12" r="2" />
+      <circle cx="7" cy="18" r="2" />
+    </svg>
+  );
+}

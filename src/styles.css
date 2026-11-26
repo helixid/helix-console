@@ -1,31 +1,35 @@
 /* ------------------------------------------------------------------ *
  * HelixID Console theme.
  * Two token sets driven by [data-theme] on <html>; light is the default.
- * Palette mirrors the helixid.dev brand: neutral base + a single signal
- * orange (#ff6a00), one radius/shadow/spacing scale, mono for identifiers.
- * The sidebar keeps a fixed dark brand panel in both themes so the
- * wordmark stays legible and the app reads as a premium console.
+ * Palette follows the 2026-10 HelixID identity: cool neutrals on a navy
+ * ink (#0b1220) with a single signal teal (#0fb5ae light / #2dd4bf dark),
+ * taken from the shipped logo set; one radius/shadow/spacing scale, mono
+ * for identifiers. Pure teal is decorative only on light surfaces (2.6:1
+ * on white) — text and links use --accent-strong, which clears AA.
+ * The sidebar keeps a fixed navy brand panel in both themes so the
+ * lockup stays legible and the app reads as a premium console.
  * ------------------------------------------------------------------ */
 
 :root {
   color-scheme: light;
 
-  --bg: #f6f6f4;
+  --bg: #f4f6f8;
   --surface: #ffffff;
-  --surface-2: #f1f1ef;
-  --surface-3: #e7e7e3;
-  --hairline: rgba(18, 18, 22, 0.09);
-  --hairline-strong: rgba(18, 18, 22, 0.16);
+  --surface-2: #f1f4f7;
+  --surface-3: #e3e8ee;
+  --hairline: rgba(11, 18, 32, 0.09);
+  --hairline-strong: rgba(11, 18, 32, 0.16);
 
-  --ink: #17171a;
-  --ink-muted: #55555b;
-  --ink-faint: #7a7a80;
+  --ink: #0b1220;
+  --ink-muted: #5b6b7a;
+  --ink-faint: #7b8794;
 
-  --accent: #ff6a00;
-  --accent-strong: #c7510a; /* AA-safe orange text on light */
-  --accent-soft: #fff1e8;
-  --accent-glow: rgba(255, 106, 0, 0.18);
-  --accent-ink: #1c1206; /* text on an accent fill */
+  --accent: #0fb5ae;
+  --accent-strong: #0a7c77; /* AA-safe teal text on light (5.0:1) */
+  --accent-hover: #0e9c96; /* primary-button hover fill */
+  --accent-soft: #e6f8f6;
+  --accent-glow: rgba(15, 181, 174, 0.18);
+  --accent-ink: #06201e; /* text on an accent fill */
 
   --success: #0e7a41;
   --success-soft: #e7f5ec;
@@ -34,8 +38,9 @@
   --warning: #8a6100;
   --warning-soft: #fbf1d9;
 
-  --code-bg: #f5f5f3;
-  --shadow-card: 0 1px 2px rgba(16, 16, 20, 0.05), 0 6px 20px rgba(16, 16, 20, 0.06);
+  --code-bg: #f1f4f7;
+  --scrim: rgba(11, 18, 32, 0.45); /* backdrop behind a drawer */
+  --shadow-card: 0 1px 2px rgba(11, 18, 32, 0.05), 0 6px 20px rgba(11, 18, 32, 0.06);
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', SFMono-Regular, Menlo, monospace;
@@ -47,20 +52,23 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #0a0a0a;
-  --surface: #131313;
-  --surface-2: #191919;
-  --surface-3: #202020;
+  --bg: #0b1220;
+  --surface: #111a2b;
+  --surface-2: #17223a;
+  --surface-3: #1e2a44;
   --hairline: rgba(255, 255, 255, 0.07);
   --hairline-strong: rgba(255, 255, 255, 0.14);
 
-  --ink: #f2f2f0;
-  --ink-muted: #9c9c98;
-  --ink-faint: #67676a;
+  --ink: #f5f7fa;
+  --ink-muted: #aeb8c4;
+  --ink-faint: #6f7d8f;
 
-  --accent-strong: #ff8433;
-  --accent-soft: rgba(255, 106, 0, 0.12);
-  --accent-glow: rgba(255, 106, 0, 0.35);
+  /* Teal reads bright on navy — the lighter brand tint is the accent here. */
+  --accent: #2dd4bf;
+  --accent-strong: #2dd4bf;
+  --accent-hover: #5ee2d1;
+  --accent-soft: rgba(45, 212, 191, 0.12);
+  --accent-glow: rgba(45, 212, 191, 0.35);
 
   --success: #34d374;
   --success-soft: rgba(52, 211, 116, 0.12);
@@ -69,7 +77,8 @@
   --warning: #e8b93b;
   --warning-soft: rgba(232, 185, 59, 0.12);
 
-  --code-bg: #0d0d0d;
+  --code-bg: #0a0f1c;
+  --scrim: rgba(0, 0, 0, 0.62);
   --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
@@ -95,7 +104,7 @@ body {
 
 ::selection {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 h1,
@@ -132,9 +141,9 @@ a {
 }
 
 .app-sidebar {
-  background: #0c0c0c;
+  background: #0b1220;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e8e8e6;
+  color: #f5f7fa;
   padding: 22px 14px;
   display: flex;
   flex-direction: column;
@@ -152,16 +161,11 @@ a {
   user-select: none;
 }
 
-.app-logo .logo-mark {
-  width: 34px;
-  height: 40px;
-  object-fit: contain;
+/* The lockup (mark + HELIX ID wordmark) is one SVG, drawn for dark ground. */
+.app-logo .logo-lockup {
+  height: 26px;
+  width: auto;
   filter: drop-shadow(0 0 12px var(--accent-glow));
-}
-
-.app-logo .logo-word {
-  height: 17px;
-  object-fit: contain;
 }
 
 .app-nav {
@@ -177,7 +181,7 @@ a {
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   border-left: 2px solid transparent;
-  color: #9a9a97;
+  color: #aeb8c4;
   text-decoration: none;
   font-weight: 500;
   transition: background 0.16s ease, color 0.16s ease;
@@ -195,9 +199,9 @@ a {
 }
 
 .app-nav a.active {
-  background: rgba(255, 106, 0, 0.14);
+  background: rgba(45, 212, 191, 0.14);
   border-left-color: var(--accent);
-  color: #ff8433;
+  color: #5ee2d1;
 }
 
 .sidebar-foot {
@@ -205,7 +209,7 @@ a {
   padding: 10px 12px;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5a5a5a;
+  color: #6f7d8f;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -271,7 +275,7 @@ a {
 
 .theme-toggle[aria-checked='true'] .theme-toggle-track {
   background: var(--accent-soft);
-  border-color: rgba(255, 106, 0, 0.4);
+  border-color: rgba(15, 181, 174, 0.4);
 }
 
 .theme-toggle-thumb {
@@ -352,9 +356,9 @@ button[type='submit'],
 
 button[type='submit']:hover:not(:disabled),
 .btn-primary:hover:not(:disabled) {
-  background: var(--accent-strong) !important;
+  background: var(--accent-hover) !important;
   border-color: transparent !important;
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .revoke-button {
@@ -603,7 +607,7 @@ tbody tr:last-child td {
   align-items: center;
   gap: 10px;
   background: var(--accent-soft);
-  border: 1px solid rgba(255, 106, 0, 0.3);
+  border: 1px solid rgba(15, 181, 174, 0.3);
   border-radius: var(--radius-sm);
   color: var(--accent-strong);
   padding: 9px 14px;
@@ -712,34 +716,759 @@ tbody tr:last-child td {
   margin: 20px 0 10px;
 }
 
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.agent-detail-header {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.agent-detail-identity {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 2px;
 }
 
-.history-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: var(--surface-2);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-sm);
-  padding: 9px 13px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.history-list .history-date {
-  color: var(--ink-faint);
-  margin-left: auto;
+/* Pulled left so the DID text lines up with the name above it. The max-width
+   gives back what the negative margin takes, or the DID wraps 6px early. */
+.agent-detail-identity .did-copy {
+  margin-left: -6px;
+  max-width: calc(100% + 6px);
+  text-align: left;
 }
 
 /* ---------------------------------------------------------------- */
+/* Credential wallet (components/agents/wallet/)                     */
+/* One card per credential the agent holds, with the raw JSON one    */
+/* toggle away. Drawn entirely from the tokens above: a card's type  */
+/* is an icon, a label and an accent picked from the existing        */
+/* palette, so the status colours stay reserved for status.          */
+/* New text here uses --ink-muted rather than --ink-faint, which     */
+/* does not reach AA on small type in either theme.                  */
+/* ---------------------------------------------------------------- */
+
+.wallet__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.agent-detail .wallet__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.wallet__count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0;
+}
+
+.wallet__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.wallet__filters select,
+.wallet__filters input {
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* A set width rather than a flex-basis: the filter group sizes itself to its
+   contents, and only a width counts towards that. */
+.wallet__search {
+  width: 240px;
+}
+
+.wallet .empty-state,
+.wallet .loading-note {
+  color: var(--ink-muted);
+}
+
+.wallet__notice,
+.wallet__error,
+.cred-drawer__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.wallet__notice {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.cred-drawer__notice {
+  margin: 0 0 12px;
+}
+
+.wallet__notice button,
+.wallet__error button,
+.cred-drawer__notice button,
+.wallet .empty-state button {
+  padding: 5px 11px;
+  font-size: 12.5px;
+}
+
+/* Segmented view switch: Wallet | JSON, and Details | JSON in the drawer. */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+}
+
+.segmented__tab {
+  padding: 4px 13px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.segmented__tab:hover {
+  color: var(--ink);
+}
+
+.segmented__tab[aria-selected='true'] {
+  background: var(--surface);
+  border-color: var(--hairline-strong);
+  color: var(--ink);
+}
+
+/* Status pill: the badge the tables use, with an icon where the dot was,
+   so the state is carried by a glyph and a word as well as by colour. */
+
+.status-pill {
+  flex: none;
+  white-space: nowrap;
+}
+
+.status-pill::before {
+  content: none;
+}
+
+.status-pill svg {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  stroke-width: 2.4;
+}
+
+.status-not-yet-valid {
+  background: var(--surface-3);
+  color: var(--ink-muted);
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.copy-button svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+
+.copy-button.unstyled {
+  padding: 3px 6px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--ink-muted);
+  cursor: copy;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.copy-button.unstyled:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.copy-button.copied,
+.copy-button.unstyled.copied {
+  color: var(--success);
+}
+
+.copy-button__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Grid: one to three columns. A card never drops below 280px (or below the
+   wrapper itself, when that is narrower), and the max() term stops a fourth
+   column appearing on very wide panels. The wrapper is a size container
+   because the console's fixed sidebar makes viewport width a poor guide to
+   how much room the wallet actually has (same reasoning as .profile-card). */
+
+.wallet__grid-wrap {
+  container-type: inline-size;
+}
+
+.wallet__grid {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(min(280px, 100%), calc((100% - 28px) / 3)), 1fr)
+  );
+}
+
+.wallet__grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.cred-card {
+  --cred-accent: var(--hairline-strong);
+  --cred-accent-soft: var(--surface-2);
+  --cred-accent-ink: var(--ink-muted);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 17px 16px 14px;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--cred-accent-soft), var(--surface) 58%);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+/* The type's accent, as a strip along the top edge. */
+.cred-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--cred-accent);
+}
+
+.cred-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+
+.cred-card--agent {
+  --cred-accent: var(--accent);
+  --cred-accent-soft: var(--accent-soft);
+  --cred-accent-ink: var(--accent-strong);
+}
+
+.cred-card--grant {
+  --cred-accent: var(--ink-muted);
+  --cred-accent-soft: var(--surface-3);
+  --cred-accent-ink: var(--ink);
+}
+
+.cred-card--user {
+  --cred-accent: var(--ink-faint);
+  --cred-accent-soft: var(--surface-2);
+  --cred-accent-ink: var(--ink);
+}
+
+/* Past credentials step back: the type accent drains to neutral and the
+   text drops a level. The status pill keeps its own colour — it is the one
+   thing on a past card that should still stand out. Declared after the
+   type rules so it wins over them. */
+.cred-card--expired,
+.cred-card--revoked {
+  --cred-accent: var(--hairline-strong);
+  --cred-accent-soft: var(--surface-2);
+  --cred-accent-ink: var(--ink-muted);
+  background: var(--surface-2);
+}
+
+.cred-card--expired .cred-card__open,
+.cred-card--revoked .cred-card__open {
+  color: var(--ink-muted);
+}
+
+.cred-card--expired .scope-chip,
+.cred-card--revoked .scope-chip {
+  background: var(--surface-3);
+  color: var(--ink-muted);
+}
+
+/* Revoked: the band takes the place of the accent strip. */
+.cred-card--revoked::before {
+  content: none;
+}
+
+.cred-card__band {
+  margin: -17px -16px 0;
+  padding: 6px 16px 5px;
+  background: var(--danger-soft);
+  border-bottom: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cred-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cred-card__icon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--cred-accent-soft);
+  border: 1px solid var(--hairline);
+  color: var(--cred-accent-ink);
+}
+
+.cred-card__icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.cred-card__open {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* The title is the button; this stretches its hit area over the whole card.
+   The copy buttons below sit above it (see .cred-card__footer .copy-button). */
+.cred-card__open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+
+.cred-card__open:focus-visible {
+  outline: none;
+}
+
+.cred-card__open:focus-visible::after {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cred-card__scopes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 30px;
+}
+
+.cred-card .scope-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cred-card .scope-chip--more {
+  background: var(--surface-2);
+  color: var(--ink-muted);
+}
+
+.cred-card__none {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.cred-card__footer {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 11px;
+  border-top: 1px dashed var(--hairline-strong);
+}
+
+.cred-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  min-height: 24px;
+}
+
+.cred-card__key {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.cred-card__value {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cred-card__value code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cred-card__footer .copy-button {
+  position: relative;
+  z-index: 1;
+  margin-right: -6px;
+  min-width: 0;
+}
+
+/* On a card an identifier is cut short, never wrapped. */
+.cred-card__footer .copy-button__text {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cred-card__footer .did-copy {
+  font-size: 12px;
+}
+
+/* Loading placeholders. */
+
+.cred-card--skeleton {
+  min-height: 178px;
+  gap: 14px;
+  background: var(--surface-2);
+}
+
+.cred-card--skeleton:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.skeleton-line {
+  display: block;
+  height: 11px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--surface-3) 25%,
+    var(--hairline-strong) 50%,
+    var(--surface-3) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sheen 1.3s ease-in-out infinite;
+}
+
+.skeleton-line--title {
+  width: 55%;
+  height: 15px;
+}
+
+.skeleton-line--short {
+  width: 38%;
+}
+
+@keyframes skeleton-sheen {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line {
+    animation: none;
+  }
+}
+
+/* A wallet holding a single credential: the card takes the full row and,
+   once there is room, lays its three parts out side by side — a deliberate
+   summary rather than one card adrift in a three-column grid. */
+
+.wallet__grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@container (min-width: 700px) {
+  .wallet__grid--single .cred-card {
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) minmax(0, 1.2fr) minmax(250px, 1fr);
+    align-items: center;
+    column-gap: 22px;
+    padding: 20px 20px 18px;
+  }
+
+  .wallet__grid--single .cred-card__band {
+    grid-column: 1 / -1;
+    margin: -20px -20px 0;
+  }
+
+  .wallet__grid--single .cred-card__footer {
+    margin-top: 0;
+    padding: 0 0 0 22px;
+    border-top: none;
+    border-left: 1px dashed var(--hairline-strong);
+  }
+}
+
+/* JSON views. Keys carry weight rather than colour; values take the
+   palette's semantic hues, all of which clear AA on --code-bg. */
+
+.json-block__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.json-block__actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+
+.json-block__actions .copy-button {
+  flex-direction: row-reverse;
+}
+
+.json-block__actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+.json-block__code {
+  margin: 0;
+  overflow: auto;
+  max-height: 420px;
+  padding: 14px;
+  background: var(--code-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  tab-size: 2;
+}
+
+.json-block__code:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.wallet .vc-json {
+  margin-top: 0;
+}
+
+.wallet .vc-json pre {
+  max-height: min(62vh, 640px);
+}
+
+.json-key {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.json-string {
+  color: var(--success);
+}
+
+.json-number {
+  color: var(--warning);
+}
+
+.json-literal {
+  color: var(--danger);
+}
+
+.json-punctuation {
+  color: var(--ink-muted);
+}
+
+/* Card detail drawer. Rendered inside the panel but fixed to the viewport;
+   it must stay outside .wallet__grid-wrap, whose containment would otherwise
+   become its containing block. */
+
+.cred-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+  background: var(--scrim);
+  backdrop-filter: blur(2px);
+  animation: scrim-in 0.18s ease;
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cred-drawer {
+  width: min(540px, 100%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+  animation: drawer-in 0.22s ease;
+}
+
+/* Only ever focused from script, as the fallback target inside the dialog. */
+.cred-drawer:focus {
+  outline: none;
+}
+
+@keyframes drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cred-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cred-drawer__heading {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.agent-detail .cred-drawer__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--ink);
+}
+
+.cred-drawer .segmented {
+  align-self: flex-start;
+}
+
+/* The tab panel is what scrolls, so the header (Close) and the footer
+   (Revoke) stay put however long the credential is. The padding/margin pair
+   keeps focus rings inside the scroll box from being clipped at its edge. */
+.cred-drawer__panel {
+  flex: 1;
+  min-height: 0;
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* One scrollbar, not two: inside the drawer the code grows and the panel scrolls. */
+.cred-drawer .json-block__code {
+  max-height: none;
+}
+
+/* The field list is the panel's existing <dl> treatment (.agent-detail dl). */
+.agent-detail .cred-drawer__fields {
+  margin: 0;
+}
+
+.cred-drawer__fields dt,
+.cred-drawer .loading-note {
+  color: var(--ink-muted);
+}
+
+.cred-drawer__copyable {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.cred-drawer__copyable .copy-button {
+  margin-top: -2px;
+}
+
+.cred-drawer__footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+@media (max-width: 560px) {
+  .cred-drawer {
+    padding: 18px 16px;
+    border-left-width: 0;
+  }
+}
+
 /* Forms                                                             */
 /* ---------------------------------------------------------------- */
 
@@ -919,7 +1648,7 @@ textarea:focus {
   font-size: 16px;
   color: var(--accent-strong);
   background: var(--code-bg);
-  border: 1px dashed rgba(255, 106, 0, 0.45);
+  border: 1px dashed rgba(15, 181, 174, 0.45);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   margin: 0 0 16px;
@@ -1326,8 +2055,8 @@ textarea:focus {
 
 .account-auth__hero {
   position: relative;
-  background: #0c0c0c;
-  color: #e8e8e6;
+  background: #0b1220;
+  color: #f5f7fa;
   padding: 56px 52px;
   display: flex;
   flex-direction: column;
@@ -1373,31 +2102,43 @@ textarea:focus {
 
 .account-auth__copy {
   position: relative;
-  max-width: 420px;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  /* One 8px rhythm between eyebrow -> headline -> subhead; the seal sets
+     its own larger margin below. */
+  gap: 8px;
+  align-items: flex-start;
 }
 
+/* NOTE on colour: this panel is a fixed dark surface in BOTH themes (see
+   .account-auth__hero), so the theme tokens cannot be used inside it —
+   --ink/--ink-faint inverts with the theme and would render black on black
+   in light mode. The fixed rgba values below carry the same intent. */
 .account-auth__eyebrow {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  letter-spacing: 0.09em;
+  font-size: 11px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 106, 0, 0.85);
-  margin-bottom: 14px;
+  color: rgba(245, 247, 250, 0.42);
+  margin: 0;
 }
 
 .account-auth__headline {
-  font-size: 32px;
-  line-height: 1.16;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  margin: 0 0 14px;
+  font-size: 35px;
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 2px 0 0;
 }
 
 .account-auth__subhead {
-  font-size: 14.5px;
-  line-height: 1.6;
-  color: rgba(232, 232, 230, 0.62);
-  margin: 0;
+  font-size: 15px;
+  line-height: 1.62;
+  color: rgba(245, 247, 250, 0.62);
+  /* ~52 characters — the comfortable measure for a single column. */
+  max-width: 52ch;
+  margin: 2px 0 0;
 }
 
 /* The signature element: a live-feeling seal that shows the actual
@@ -1405,12 +2146,14 @@ textarea:focus {
    grounded in the real backend behaviour, not decoration. */
 .did-seal {
   position: relative;
-  margin-top: 34px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: 30px;
+  /* The --accent-soft tint the design calls for, written as a fixed value
+     for the same reason the copy colours above are — see that note. */
+  background: rgba(15, 181, 174, 0.06);
+  border: 1px solid rgba(15, 181, 174, 0.18);
   border-radius: var(--radius);
   padding: 18px 20px;
-  max-width: 420px;
+  max-width: 440px;
 }
 
 .did-seal__row {
@@ -1449,13 +2192,14 @@ textarea:focus {
   font-weight: 650;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: rgba(232, 232, 230, 0.55);
+  color: rgba(245, 247, 250, 0.55);
 }
 
 .did-seal__value {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: #f2f2f0;
+  letter-spacing: 0.02em;
+  color: #f5f7fa;
   word-break: break-all;
   min-height: 1.4em;
 }
@@ -1477,13 +2221,13 @@ textarea:focus {
 .did-seal__foot {
   margin-top: 10px;
   font-size: 12px;
-  color: rgba(232, 232, 230, 0.45);
+  color: rgba(245, 247, 250, 0.45);
 }
 
 .account-auth__footnote {
   position: relative;
   font-size: 12px;
-  color: rgba(232, 232, 230, 0.4);
+  color: rgba(245, 247, 250, 0.4);
 }
 
 .account-auth__panel {
@@ -1494,8 +2238,12 @@ textarea:focus {
 
 .account-auth__card {
   width: 100%;
-  max-width: 380px;
-  padding: 8px 4px;
+  max-width: 400px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
 }
 
 .account-auth__card h1 {
@@ -1610,6 +2358,24 @@ textarea:focus {
 
 .account-auth__switch a:hover {
   text-decoration: underline;
+}
+
+.account-auth__legal {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.account-auth__legal a {
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.account-auth__legal a:hover {
+  color: var(--accent-strong);
 }
 
 @media (max-width: 860px) {
