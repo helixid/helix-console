@@ -163,30 +163,43 @@ describe('api/client', () => {
       await expect(api.revokeAgent('vc:1')).rejects.toThrow('already revoked');
     });
 
-    it('onboardAgentNow mints a token then redeems it, back to back', async () => {
+    it('createAgent creates a self-custody, Helix-hosted agent with POST /v1/agents', async () => {
       const { api } = await importApi();
       const origin = window.location.origin;
-      const input = { agentName: 'billing', requestedScopes: ['read:orders'], requestedDomains: ['example.com'] };
-      fetchMock.mockResolvedValueOnce(jsonResponse({ token: 'enroll:abc', expiresAt: 'later' }));
-      fetchMock.mockResolvedValueOnce(jsonResponse({ agentDid: 'did:key:zAgent', vcId: 'vc:1' }));
+      const created = { did: 'did:web:h:agents:1', enrollmentToken: 'enroll:abc', keyCustody: 'self' };
+      fetchMock.mockResolvedValueOnce(jsonResponse(created));
 
-      await expect(api.onboardAgentNow(input)).resolves.toEqual({
-        agentDid: 'did:key:zAgent',
-        vcId: 'vc:1',
-      });
-
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        1,
-        `${origin}/v1/enrollment-tokens`,
-        expect.objectContaining({ method: 'POST', body: JSON.stringify(input) }),
-      );
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        2,
-        `${origin}/v1/onboard`,
+      await expect(
+        api.createAgent({ agentName: 'billing', requestedScopes: ['read:orders'], requestedDomains: ['example.com'], maxDelegationDepth: 1 }),
+      ).resolves.toEqual(created);
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${origin}/v1/agents`,
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ enrollmentToken: 'enroll:abc', domains: input.requestedDomains }),
+          body: JSON.stringify({
+            name: 'billing',
+            scopes: ['read:orders'],
+            keyCustody: 'self',
+            didHosting: 'helix',
+            requestedDomains: ['example.com'],
+            maxDelegationDepth: 1,
+          }),
         }),
+      );
+
+      fetchMock.mockResolvedValueOnce(jsonResponse(created));
+      await api.createAgent({ agentName: 'plain', requestedScopes: ['read:orders'], requestedDomains: [] });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `${origin}/v1/agents`,
+        expect.objectContaining({ body: JSON.stringify({ name: 'plain', scopes: ['read:orders'], keyCustody: 'self', didHosting: 'helix' }) }),
+      );
+
+      // Registry v3: the "Make discoverable" choice goes with it.
+      fetchMock.mockResolvedValueOnce(jsonResponse(created));
+      await api.createAgent({ agentName: 'quiet', requestedScopes: ['read:orders'], discoverable: false });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        `${origin}/v1/agents`,
+        expect.objectContaining({ body: JSON.stringify({ name: 'quiet', scopes: ['read:orders'], keyCustody: 'self', didHosting: 'helix', discoverable: false }) }),
       );
 
       fetchMock.mockResolvedValueOnce({
@@ -194,17 +207,17 @@ describe('api/client', () => {
         status: 400,
         json: async () => ({ error: { message: 'bad scopes' } }),
       } as Response);
-      await expect(api.onboardAgentNow(input)).rejects.toThrow('bad scopes');
+      await expect(api.createAgent({ agentName: 'x', requestedScopes: [] })).rejects.toThrow('bad scopes');
     });
 
     it('getAuditLog calls GET /v1/audit-log', async () => {
       const { api } = await importApi();
       const origin = window.location.origin;
-      fetchMock.mockResolvedValueOnce(jsonResponse([{ id: '1' }]));
+      fetchMock.mockResolvedValueOnce(jsonResponse({ items: [{ id: '1' }], nextCursor: 'c1' }));
 
-      await expect(api.getAuditLog({ limit: 20 })).resolves.toEqual([{ id: '1' }]);
+      await expect(api.getAuditLog({ limit: 20, cursor: 'c0' })).resolves.toEqual({ items: [{ id: '1' }], nextCursor: 'c1' });
       expect(fetchMock).toHaveBeenCalledWith(
-        `${origin}/v1/audit-log?limit=20`,
+        `${origin}/v1/audit-log?limit=20&cursor=c0`,
         expect.objectContaining({ method: 'GET' }),
       );
 

@@ -6,11 +6,10 @@
 
 import { getApiConfig } from '../runtimeConfig';
 import type {
+  AgentOnboarding,
   AuditFilters,
-  AuditLogEntry,
+  AuditLogPage,
   EnrollmentTokenInput,
-  EnrollmentTokenResult,
-  OnboardAgentResult,
   VcFilters,
   VCSummary,
   VCResponse,
@@ -112,25 +111,27 @@ export const api = {
   revokeAgent: async (vcId: string): Promise<{ vcId: string; revoked: true; revokedAt: string }> =>
     requestJson(`/v1/vcs/${encodeURIComponent(vcId)}/revoke`, { method: 'POST' }),
   /**
-   * Onboards an agent in one call from the caller's perspective: mints an
-   * enrollment token and immediately redeems it, client-side, back to back
-   * (still 2 API calls internally — POST /v1/enrollment-tokens, then
-   * POST /v1/onboard).
+   * Creates a self-custody agent (KYA-OS story F-3): POST /v1/agents with
+   * keyCustody self and a Helix-hosted did:web. helixid holds no agent keys;
+   * the agent generates its own with `helix init` and the returned token.
    */
-  onboardAgentNow: async (input: EnrollmentTokenInput): Promise<OnboardAgentResult> => {
-    const { token } = await requestJson<EnrollmentTokenResult>('/v1/enrollment-tokens', {
+  createAgent: async (input: EnrollmentTokenInput): Promise<AgentOnboarding> =>
+    requestJson<AgentOnboarding>('/v1/agents', {
       method: 'POST',
-      body: input,
-    });
-    return requestJson<OnboardAgentResult>('/v1/onboard', {
-      method: 'POST',
-      body: { enrollmentToken: token, domains: input.requestedDomains },
-    });
-  },
-  getAuditLog: async (filters?: AuditFilters): Promise<AuditLogEntry[]> =>
+      body: {
+        name: input.agentName,
+        scopes: input.requestedScopes,
+        keyCustody: 'self',
+        didHosting: 'helix',
+        ...(input.requestedDomains?.length ? { requestedDomains: input.requestedDomains } : {}),
+        ...(input.maxDelegationDepth !== undefined ? { maxDelegationDepth: input.maxDelegationDepth } : {}),
+        ...(input.discoverable !== undefined ? { discoverable: input.discoverable } : {}),
+      },
+    }),
+  getAuditLog: async (filters?: AuditFilters): Promise<AuditLogPage> =>
     filters
-      ? requestJson<AuditLogEntry[]>('/v1/audit-log', { query: { ...filters } })
-      : requestJson<AuditLogEntry[]>('/v1/audit-log'),
+      ? requestJson<AuditLogPage>('/v1/audit-log', { query: { ...filters } })
+      : requestJson<AuditLogPage>('/v1/audit-log'),
 };
 
 export type Api = typeof api;

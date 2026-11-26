@@ -7,7 +7,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
-import helixMark from '../assets/helix-mark.png';
+import { LoginHero } from './LoginHero';
 
 interface LocationState {
   from?: { pathname?: string };
@@ -43,41 +43,42 @@ export function LoginPage({ footer }: LoginPageProps = {}) {
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card card">
-        <div className="login-brand">
-          <img className="login-mark" src={helixMark} alt="" />
-          <span className="login-word">
-            HELIX<span className="accent">ID</span>
-          </span>
+    <div className="account-auth">
+      <LoginHero />
+      <div className="account-auth__panel">
+        <div className="account-auth__card">
+          <h1>Operator sign in</h1>
+          <p className="account-auth__lede">Sign in to manage your AI agent identity layer.</p>
+          <form className="account-auth__form" onSubmit={handleSubmit}>
+            <label>
+              Username
+              <input
+                autoFocus
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                autoComplete="username"
+              />
+            </label>
+            <label>
+              Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+              />
+            </label>
+            {error && (
+              <p className="account-auth__error" role="alert">
+                {error}
+              </p>
+            )}
+            <button type="submit" className="btn-primary">
+              Sign in
+            </button>
+          </form>
+          {footer}
         </div>
-        <h1>Operator sign in</h1>
-        <p className="login-subtitle">Sign in to manage your AI agent identity layer.</p>
-        <form className="login-form" onSubmit={handleSubmit}>
-          <label>
-            Username
-            <input
-              autoFocus
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              autoComplete="username"
-            />
-          </label>
-          <label>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="current-password"
-            />
-          </label>
-          {error && <p role="alert">{error}</p>}
-          <button type="submit" className="btn-primary">
-            Sign in
-          </button>
-        </form>
-        {footer}
       </div>
     </div>
   );

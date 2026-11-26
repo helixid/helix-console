@@ -9,8 +9,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
 import { BotIcon, KeyIcon, ShieldIcon } from './icons';
 import { ThemeToggle } from './ThemeToggle';
-import helixMark from '../../assets/helix-mark.png';
-import helixWordmark from '../../assets/helix-wordmark.png';
+import helixLockup from '../../assets/helix-lockup.svg';
 
 export interface AppLayoutProps {
   /** Sidebar-footer content — a downstream product can override this (e.g. to show which session kind is active) without forking this component. Defaults to the self-hosted "operator console" label. */
@@ -30,8 +29,7 @@ export function AppLayout({ footer = 'operator console' }: AppLayoutProps = {}) 
     <div className="app-layout">
       <aside className="app-sidebar">
         <div className="app-logo">
-          <img className="logo-mark" src={helixMark} alt="" />
-          <img className="logo-word" src={helixWordmark} alt="HelixID" />
+          <img className="logo-lockup" src={helixLockup} alt="HelixID" />
         </div>
         <nav className="app-nav">
           <NavLink to="/agents">
